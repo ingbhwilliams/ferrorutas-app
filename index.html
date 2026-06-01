@@ -1,14 +1,905 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FerreRutas Mejín - Sistema de Gestión</title>
+    <!-- Tailwind CSS para el diseño -->
     <script src="https://cdn.tailwindcss.com"></script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    <!-- Leaflet para los mapas -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --brand-color: #2563eb;
+            --brand-color-light: #dbeafe;
+        }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9fafb; margin: 0; padding: 0; overflow-x: hidden; }
+        .chart-container { position: relative; width: 100%; max-width: 600px; margin-left: auto; margin-right: auto; height: 300px; max-height: 400px; }
+        #map { height: 100%; width: 100%; z-index: 1; }
+        .hidden { display: none !important; }
+        /* Pin personalizado del mapa */
+        .custom-pin {
+            background-color: var(--brand-color);
+            width: 28px;
+            height: 28px;
+            border-radius: 50% 50% 50% 0;
+            border: 2px solid white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transform: rotate(-45deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .custom-pin.in-route { background-color: #10b981; }
+        .custom-pin span { transform: rotate(45deg); color: white; font-size: 14px; font-weight: 900; }
+        /* Etiqueta del pin */
+        .pin-label {
+            background: white; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 800; 
+            margin-top: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); border: 1px solid #e2e8f0;
+            white-space: nowrap; text-align: center; color: #1e293b;
+        }
+        .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+        .animate-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideUp { from { transform: translateY(100%); opacity:0; } to { transform: translateY(0); opacity:1; } }
+        /* Sobrescribir iconos base de leaflet */
+        .leaflet-div-icon { background: transparent; border: none; }
+    </style>
+</head>
+<body>
+
+    <!-- ================= PANTALLA DE LOGIN ================= -->
+    <div id="login-screen" class="min-h-screen flex items-center justify-center p-4 bg-slate-900 transition-colors duration-500 relative overflow-hidden">
+        <!-- Elemento de fondo dinámico -->
+        <div id="login-bg-accent" class="absolute top-0 right-0 w-96 h-96 bg-blue-600 rounded-full blur-3xl opacity-20 -mr-20 -mt-20 transition-colors duration-500"></div>
+        
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md text-center relative z-10">
+            <div id="login-logo-placeholder" class="w-20 h-20 bg-blue-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-white text-4xl shadow-lg transition-colors duration-500">
+                &#128205;
+            </div>
+            <h1 id="display-app-name" class="text-3xl font-black text-slate-800 mb-2">FerreRutas Mejín</h1>
+            <p class="text-slate-500 mb-8 font-medium">Gestión Logística Inteligente</p>
+            <div class="space-y-4">
+                <div class="relative">
+                    <span class="absolute left-4 top-4 text-slate-400">&#128100;</span>
+                    <input type="text" id="username" placeholder="Usuario" class="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700">
+                </div>
+                <div class="relative">
+                    <span class="absolute left-4 top-4 text-slate-400">&#128274;</span>
+                    <input type="password" id="password" placeholder="Contraseña" class="w-full pl-12 pr-5 py-4 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium text-slate-700">
+                </div>
+                <button onclick="handleLogin()" id="btn-login" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:opacity-90 active:scale-95 transition-all text-lg mt-2">Ingresar</button>
+            </div>
+            <div id="login-error" class="bg-red-50 text-red-600 p-3 rounded-xl mt-4 text-sm font-bold border border-red-100 hidden flex items-center justify-center gap-2">
+                <span>&#9888;</span> <span id="error-msg">Credenciales incorrectas</span>
+            </div>
+            <div class="mt-8 text-xs text-slate-400 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                <p class="font-bold mb-1 text-slate-500">Cuentas de prueba:</p>
+                <p>Admin: <span class="font-mono bg-white px-1 border rounded text-slate-600">admin / 123</span></p>
+                <p>Repartidor: <span class="font-mono bg-white px-1 border rounded text-slate-600">juan / 123</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PANEL ADMIN ================= -->
+    <div id="admin-dashboard" class="min-h-screen hidden flex flex-col bg-slate-50">
+        <header id="admin-header" class="bg-blue-600 text-white p-4 flex justify-between items-center shadow-lg transition-colors duration-500 shrink-0 z-20">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl bg-white/20 p-2 rounded-xl">&#9881;</span>
+                <h1 class="font-black text-xl tracking-tight">Admin</h1>
+            </div>
+            <button onclick="logout()" class="bg-black/20 hover:bg-black/30 p-2.5 rounded-full shadow-inner transition-colors">
+                <span class="text-lg">&#10006;</span>
+            </button>
+        </header>
+
+        <nav class="flex bg-white shadow-sm border-b border-slate-200 z-10 relative">
+            <button onclick="showAdminTab('stores')" id="nav-btn-stores" class="flex-1 py-4 text-sm font-bold border-b-4 border-blue-600 text-blue-600 transition-colors">Ferreterías</button>
+            <button onclick="showAdminTab('users')" id="nav-btn-users" class="flex-1 py-4 text-sm font-bold border-b-4 border-transparent text-slate-500 hover:text-slate-700 transition-colors">Personal</button>
+            <button onclick="showAdminTab('config')" id="nav-btn-config" class="flex-1 py-4 text-sm font-bold border-b-4 border-transparent text-slate-500 hover:text-slate-700 transition-colors">Ajustes</button>
+        </nav>
+
+        <main class="flex-1 overflow-y-auto p-4 space-y-6 pb-20">
+            <!-- ADMIN: TIENDAS -->
+            <section id="tab-stores" class="space-y-4 animate-up">
+                <button onclick="openStoreModal()" class="w-full bg-slate-800 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
+                    <span class="text-xl">+</span> Añadir Nueva Ferretería
+                </button>
+                <div class="flex justify-between items-end mt-6 mb-2">
+                    <p class="text-slate-500 text-xs font-black uppercase tracking-wider">Directorio Activo</p>
+                    <span class="bg-slate-200 text-slate-600 text-[10px] font-black px-2 py-1 rounded-full" id="admin-store-count">0</span>
+                </div>
+                <div id="admin-store-list" class="space-y-3"></div>
+            </section>
+
+            <!-- ADMIN: USUARIOS -->
+            <section id="tab-users" class="hidden space-y-4 animate-up">
+                <button onclick="openUserModal()" class="w-full bg-emerald-500 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-transform">
+                    <span class="text-xl">+</span> Registrar Nuevo Usuario
+                </button>
+                <div class="flex justify-between items-end mt-6 mb-2">
+                    <p class="text-slate-500 text-xs font-black uppercase tracking-wider">Plantilla de Personal</p>
+                    <span class="bg-slate-200 text-slate-600 text-[10px] font-black px-2 py-1 rounded-full" id="admin-user-count">0</span>
+                </div>
+                <div id="admin-user-list" class="space-y-3"></div>
+            </section>
+
+            <!-- ADMIN: CONFIGURACIÓN -->
+            <section id="tab-config" class="hidden space-y-6 animate-up">
+                <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
+                    <h2 class="font-black text-slate-800 text-xl mb-6 flex items-center gap-2">
+                        <span class="text-2xl">&#127912;</span> Marca Blanca
+                    </h2>
+                    <div class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-black text-slate-500 uppercase mb-2">Nombre de la Aplicación</label>
+                            <input type="text" id="config-name" class="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl outline-none font-bold text-slate-800 focus:ring-2 transition-all">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-black text-slate-500 uppercase mb-2">Color Corporativo Principal</label>
+                            <div class="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <input type="color" id="config-color" class="w-14 h-14 rounded-lg cursor-pointer border-none p-0 bg-transparent">
+                                <div class="flex-1">
+                                    <p class="text-sm font-bold text-slate-800">Selecciona el tono</p>
+                                    <p class="text-xs text-slate-500">Se aplicará a toda la app.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button onclick="saveConfig()" id="btn-save-config" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg mt-2 active:scale-95 transition-all transition-colors duration-500">Guardar Cambios Visuales</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ================= PANEL REPARTIDOR ================= -->
+    <div id="driver-dashboard" class="h-screen hidden flex flex-col relative overflow-hidden bg-slate-50">
+        
+        <!-- Header Flotante (Solo Mapa) -->
+        <header id="driver-header-map" class="absolute top-0 left-0 right-0 z-[500] p-4 pointer-events-none flex justify-between items-start transition-opacity duration-300">
+            <div class="bg-white/95 backdrop-blur shadow-lg p-2.5 rounded-2xl pointer-events-auto border border-white/50 flex items-center gap-3 pr-6">
+                <div class="w-10 h-10 rounded-full bg-slate-200 border-2 border-white shadow-sm flex items-center justify-center text-lg overflow-hidden" id="driver-avatar-map">&#128100;</div>
+                <div>
+                    <h1 id="driver-app-name-map" class="text-sm font-black text-slate-800 leading-none tracking-tight">FerreRutas</h1>
+                    <p id="driver-user-name-map" class="text-[10px] font-bold text-blue-600 uppercase tracking-wide">Cargando...</p>
+                </div>
+            </div>
+            <button onclick="logout()" class="bg-white/95 backdrop-blur shadow-lg p-3.5 rounded-full pointer-events-auto text-red-500 border border-white/50 hover:bg-red-50 active:scale-90 transition-all">
+                <span class="text-lg leading-none font-black">&#10006;</span>
+            </button>
+        </header>
+
+        <!-- Header Normal (Lista/Ruta) -->
+        <header id="driver-header-normal" class="bg-blue-600 text-white p-4 flex justify-between items-center shadow-lg shrink-0 z-20 hidden transition-colors duration-500">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-white/20 border-2 border-white/50 flex items-center justify-center text-lg overflow-hidden" id="driver-avatar-normal">&#128100;</div>
+                <div>
+                    <h1 id="driver-app-name-normal" class="text-xl font-black leading-none tracking-tight">FerreRutas</h1>
+                    <p id="driver-tab-title" class="text-[10px] font-bold text-blue-100 uppercase tracking-wide mt-1">Directorio</p>
+                </div>
+            </div>
+            <button onclick="logout()" class="bg-black/20 p-2.5 rounded-full shadow-inner hover:bg-black/30 active:scale-90 transition-all">
+                <span class="text-lg leading-none font-black">&#10006;</span>
+            </button>
+        </header>
+
+        <div class="flex-1 relative w-full h-full">
+            
+            <!-- VISTA 1: MAPA -->
+            <div id="view-map" class="absolute inset-0 z-10 transition-opacity duration-300">
+                <div id="map" class="w-full h-full"></div>
+                
+                <!-- Buscador flotante -->
+                <div class="absolute top-[88px] left-4 right-4 z-[400] pointer-events-auto">
+                    <div class="relative shadow-lg rounded-2xl">
+                        <span class="absolute left-4 top-3.5 text-slate-400 text-lg">&#128269;</span>
+                        <input type="text" id="map-search" onkeyup="filterMap()" placeholder="Buscar ferretería o zona..." class="w-full pl-12 pr-4 py-3.5 bg-white/95 backdrop-blur border border-white/50 rounded-2xl outline-none font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 transition-all">
+                    </div>
+                </div>
+
+                <!-- Insignia contador en mapa -->
+                <div id="route-badge-map" class="absolute top-[150px] left-4 z-[400] bg-white/95 backdrop-blur px-4 py-2 rounded-xl shadow-md border border-emerald-100 flex items-center gap-2 hidden pointer-events-none">
+                    <div class="w-3 h-3 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm font-black text-slate-700" id="route-count-map">0 en ruta</span>
+                </div>
+
+                <!-- Bottom Sheet Detalle (Popup Mapa) -->
+                <div id="store-detail" class="absolute bottom-4 left-4 right-4 z-[1000] bg-white rounded-3xl shadow-2xl overflow-hidden pointer-events-auto hidden animate-up border border-slate-100">
+                    <div class="h-24 w-full bg-slate-200 relative overflow-hidden" id="detail-image-container">
+                        <img id="detail-image" src="" class="w-full h-full object-cover opacity-80" alt="Fachada">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                        <button onclick="hideDetail()" class="absolute top-3 right-3 text-slate-500 bg-white/90 backdrop-blur rounded-full w-8 h-8 flex items-center justify-center font-black shadow-sm active:scale-90">&#10006;</button>
+                    </div>
+                    
+                    <div class="p-5 -mt-6 relative z-10 bg-white rounded-t-3xl">
+                        <h2 id="detail-name" class="text-2xl font-black text-slate-800 leading-tight pr-8">Nombre de Tienda</h2>
+                        <p id="detail-address" class="text-sm text-slate-500 mt-1 font-medium"></p>
+                        
+                        <div class="flex gap-2 mt-3 mb-4">
+                            <span id="detail-category" class="bg-blue-50 text-blue-700 px-3 py-1 text-[11px] font-black rounded-lg border border-blue-100 uppercase tracking-wide">Cat</span>
+                            <span id="detail-zone" class="bg-slate-100 text-slate-600 px-3 py-1 text-[11px] font-black rounded-lg uppercase tracking-wide">Zona</span>
+                        </div>
+
+                        <div id="detail-notes-container" class="bg-amber-50 border border-amber-100 p-3 rounded-xl mb-4 hidden items-start gap-2">
+                            <span class="text-amber-500 mt-0.5">&#9888;</span>
+                            <p id="detail-notes" class="text-xs text-amber-800 font-bold leading-snug"></p>
+                        </div>
+
+                        <div class="flex gap-3 mt-2">
+                            <button id="route-btn" onclick="toggleRouteFromDetail()" class="flex-1 py-4 rounded-xl font-black text-sm shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+                                <span id="route-btn-icon" class="text-lg"></span> <span id="route-btn-text">Acción</span>
+                            </button>
+                            <button onclick="openGPSFromDetail()" id="gps-btn" class="bg-blue-600 text-white px-5 rounded-xl shadow-lg shadow-blue-500/30 active:scale-95 transition-all flex items-center justify-center transition-colors duration-500">
+                                <span class="text-2xl">&#10148;</span>
+                            </button>
+                            <button onclick="openFeedbackFromDetail()" class="bg-slate-100 text-slate-600 px-5 rounded-xl border border-slate-200 shadow-sm hover:bg-slate-200 active:scale-95 transition-all flex items-center justify-center">
+                                <span class="text-xl">&#128172;</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISTA 2: LISTA / DIRECTORIO -->
+            <div id="view-list" class="absolute inset-0 bg-slate-50 z-20 overflow-y-auto hidden pb-24">
+                <div class="p-4 space-y-4">
+                    <div class="relative shadow-sm rounded-xl mb-6">
+                        <span class="absolute left-4 top-3.5 text-slate-400">&#128269;</span>
+                        <input type="text" id="list-search" onkeyup="filterList()" placeholder="Buscar ferretería..." class="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl outline-none font-bold text-slate-700 focus:border-blue-500 transition-colors">
+                    </div>
+                    
+                    <div id="store-list-container" class="space-y-3"></div>
+                    <div id="empty-list-msg" class="text-center py-10 hidden">
+                        <span class="text-4xl opacity-20">&#128269;</span>
+                        <p class="text-slate-400 font-bold mt-2">No se encontraron resultados</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VISTA 3: RUTA ACTIVA -->
+            <div id="view-route" class="absolute inset-0 bg-slate-50 z-20 overflow-y-auto hidden pb-24">
+                <div class="p-4 space-y-4">
+                    <div id="route-list-container" class="space-y-4 relative">
+                        <!-- Linea conectora se inserta vía JS -->
+                    </div>
+                    <div id="empty-route-msg" class="text-center py-16">
+                        <span class="text-6xl grayscale opacity-20">&#128666;</span>
+                        <h3 class="text-slate-600 font-black text-lg mt-4">Tu ruta está vacía</h3>
+                        <p class="text-slate-400 text-sm mt-1 font-medium">Ve al Directorio o al Mapa para seleccionar paradas.</p>
+                        <button onclick="showDriverTab('list')" class="mt-6 bg-slate-200 text-slate-700 font-bold py-2 px-6 rounded-full text-sm hover:bg-slate-300">Ir al Directorio</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- NAVEGACIÓN INFERIOR -->
+        <nav class="bg-white border-t border-slate-200 flex safe-bottom z-[100] shadow-[0_-5px_20px_rgba(0,0,0,0.05)] shrink-0">
+            <button onclick="showDriverTab('map')" id="tab-btn-map" class="flex-1 py-3.5 flex flex-col items-center gap-1 text-blue-600 transition-colors duration-500">
+                <span class="text-2xl leading-none">&#128506;</span>
+                <span class="text-[10px] font-black uppercase tracking-widest">Mapa</span>
+            </button>
+            <button onclick="showDriverTab('list')" id="tab-btn-list" class="flex-1 py-3.5 flex flex-col items-center gap-1 text-slate-400 transition-colors duration-500">
+                <span class="text-2xl leading-none">&#128450;</span>
+                <span class="text-[10px] font-black uppercase tracking-widest">Directorio</span>
+            </button>
+            <button onclick="showDriverTab('route')" id="tab-btn-route" class="flex-1 py-3.5 flex flex-col items-center gap-1 text-slate-400 relative transition-colors duration-500">
+                <span class="text-2xl leading-none">&#128666;</span>
+                <span class="text-[10px] font-black uppercase tracking-widest">Mi Ruta</span>
+                <div id="nav-route-badge" class="absolute top-1 right-8 bg-emerald-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-sm border-2 border-white hidden">0</div>
+            </button>
+        </nav>
+    </div>
+
+    <!-- ================= MODALES GENÉRICOS ================= -->
+    
+    <!-- Modal: Feedback -->
+    <div id="modal-feedback" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[2000] hidden items-center justify-center p-4 animate-up">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl relative">
+            <button onclick="closeFeedbackModal()" class="absolute top-4 right-4 bg-slate-100 text-slate-500 w-8 h-8 rounded-full font-black flex items-center justify-center active:scale-90">&#10006;</button>
+            <h3 class="font-black text-xl text-slate-800 mb-1 flex items-center gap-2"><span class="text-2xl">&#128172;</span> Reportar</h3>
+            <p id="feedback-store-name" class="text-sm font-bold mb-4 text-blue-600 truncate transition-colors duration-500"></p>
+            
+            <textarea id="feedback-text" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm outline-none focus:border-blue-500 focus:bg-white min-h-[120px] resize-none font-medium text-slate-700" placeholder="Ej: Se mudaron a la esquina, cerraron temprano hoy..."></textarea>
+            
+            <button onclick="submitFeedback()" id="btn-submit-feedback" class="w-full bg-blue-600 text-white font-black py-4 rounded-xl shadow-lg mt-4 active:scale-95 transition-all transition-colors duration-500 disabled:opacity-50">Enviar Reporte</button>
+            
+            <div id="feedback-history" class="mt-6 pt-4 border-t border-slate-100 hidden">
+                <h4 class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Notas Anteriores</h4>
+                <div id="feedback-history-list" class="max-h-32 overflow-y-auto space-y-2 pr-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CÓDIGO JAVASCRIPT (Lógica Principal) -->
+    <script>
+        // --- BASE DE DATOS MOCK ---
+        let DB = {
+            stores: [
+                { id: 1, name: 'Ferretería Molina', zone: 'Norte', category: 'General', address: 'Av. Banzer 4to Anillo', lat: -17.7500, lng: -63.1667, notes: 'Cierra a las 22:00', image: 'https://images.unsplash.com/photo-1542880941-196142718cb4?auto=format&fit=crop&w=400&q=80', feedback: [] },
+                { id: 2, name: 'Ferretería Camacho', zone: 'Sur', category: 'Construcción', address: 'Av. Santos Dumont 5to Anillo', lat: -17.8167, lng: -63.1833, notes: 'Descarga por portón trasero', image: '', feedback: [] },
+                { id: 3, name: 'Ferretería Hilda', zone: 'Norte', category: 'Herramientas', address: 'Av. Cristo Redentor 7mo Anillo', lat: -17.7333, lng: -63.1600, notes: 'Preguntar por Don Carlos', image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=400&q=80', feedback: [] },
+                { id: 4, name: 'Ferrecentro El Constructor', zone: 'Centro', category: 'Pinturas', address: 'Calle Florida esq. 21 de Mayo', lat: -17.7833, lng: -63.1833, notes: 'Difícil parqueo, ir temprano', image: '', feedback: [{ text: 'Ya no venden pintura automotriz', driver: 'Juan Pérez', date: 'Hoy' }] }
+            ],
+            users: [
+                { id: 1, username: 'admin', password: '123', role: 'admin', name: 'Administrador Principal', status: 'active' },
+                { id: 2, username: 'juan', password: '123', role: 'driver', name: 'Juan Pérez', status: 'active' },
+                { id: 3, username: 'mario', password: '123', role: 'driver', name: 'Mario López', status: 'blocked' }
+            ],
+            config: {
+                name: 'FerreRutas Mejín',
+                color: '#2563eb'
+            }
+        };
+
+        // --- ESTADOS GLOBALES ---
+        let currentUser = null;
+        let map = null;
+        let markers = {};
+        let routePolyline = null;
+        let activeRouteIds = [];
+        let currentSelectedStore = null;
+
+        // --- INICIALIZACIÓN ---
+        function initApp() {
+            applyTheme();
+        }
+
+        function applyTheme() {
+            const c = DB.config.color;
+            const n = DB.config.name;
+            
+            // CSS Variables
+            document.documentElement.style.setProperty('--brand-color', c);
+            document.documentElement.style.setProperty('--brand-color-light', c + '20');
+
+            // Textos
+            document.getElementById('display-app-name').innerText = n;
+            document.getElementById('driver-app-name-map').innerText = n;
+            document.getElementById('driver-app-name-normal').innerText = n;
+            document.getElementById('config-name').value = n;
+            document.getElementById('config-color').value = c;
+
+            // Elementos DOM (Pintar según marca)
+            const brandEls = ['login-bg-accent', 'login-logo-placeholder', 'btn-login', 'admin-header', 'btn-save-config', 'driver-header-normal', 'btn-submit-feedback'];
+            brandEls.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.style.backgroundColor = c;
+            });
+
+            // Actualizar mapa si existe
+            if(map) renderMarkers(document.getElementById('map-search').value);
+        }
+
+        // --- AUTH ---
+        function handleLogin() {
+            const u = document.getElementById('username').value.toLowerCase().trim();
+            const p = document.getElementById('password').value;
+            const err = document.getElementById('login-error');
+            const errMsg = document.getElementById('error-msg');
+            
+            const user = DB.users.find(x => x.username === u && x.password === p);
+
+            if(user) {
+                if(user.status === 'blocked') {
+                    errMsg.innerText = "Cuenta bloqueada por Admin.";
+                    err.classList.remove('hidden');
+                    return;
+                }
+                
+                currentUser = user;
+                err.classList.add('hidden');
+                document.getElementById('login-screen').classList.add('hidden');
+                
+                if(user.role === 'admin') {
+                    document.getElementById('admin-dashboard').classList.remove('hidden');
+                    renderAdminStores();
+                    renderAdminUsers();
+                } else {
+                    document.getElementById('driver-dashboard').classList.remove('hidden');
+                    setupDriverView();
+                }
+            } else {
+                errMsg.innerText = "Credenciales incorrectas.";
+                err.classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('driver-dashboard').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            
+            // Reset Driver State
+            activeRouteIds = [];
+            hideDetail();
+            showDriverTab('map');
+        }
+
+        // --- ADMIN DASHBOARD ---
+        function showAdminTab(tab) {
+            ['stores', 'users', 'config'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`nav-btn-${t}`);
+                btn.className = "flex-1 py-4 text-sm font-bold border-b-4 border-transparent text-slate-500 hover:text-slate-700 transition-colors";
+                btn.style.borderColor = "transparent";
+                btn.style.color = "";
+            });
+
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-btn-${tab}`);
+            activeBtn.style.borderColor = DB.config.color;
+            activeBtn.style.color = DB.config.color;
+        }
+
+        function renderAdminStores() {
+            const cont = document.getElementById('admin-store-list');
+            document.getElementById('admin-store-count').innerText = DB.stores.length;
+            
+            cont.innerHTML = DB.stores.map(s => `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-black text-slate-800 text-lg leading-tight">${s.name}</h3>
+                            <p class="text-xs text-slate-500 mt-1">${s.address}</p>
+                            <div class="mt-2 flex gap-2">
+                                <span class="bg-slate-100 px-2 py-0.5 rounded text-[10px] font-bold text-slate-600 uppercase">${s.category}</span>
+                            </div>
+                        </div>
+                        <button onclick="alert('Función de edición en desarrollo en esta demo HTML')" class="text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50">Editar</button>
+                    </div>
+                    ${s.feedback.length > 0 ? `
+                        <div class="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                            <p class="text-[10px] font-black text-amber-800 uppercase mb-2">Comentarios (${s.feedback.length})</p>
+                            ${s.feedback.map(f => `<p class="text-xs text-amber-900 mb-1"><span class="font-bold">${f.driver}:</span> ${f.text}</p>`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
+
+        function renderAdminUsers() {
+            const cont = document.getElementById('admin-user-list');
+            document.getElementById('admin-user-count').innerText = DB.users.length;
+
+            cont.innerHTML = DB.users.map(u => {
+                const isBlocked = u.status === 'blocked';
+                const roleColor = u.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
+                const roleText = u.role === 'admin' ? 'Admin' : 'Repartidor';
+                
+                return `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border ${isBlocked ? 'border-red-200 bg-red-50/30' : 'border-slate-200'} flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg ${isBlocked ? 'bg-red-100 text-red-500' : 'bg-slate-100 text-slate-600'}">
+                            ${u.role === 'admin' ? '&#128737;' : '&#128666;'}
+                        </div>
+                        <div>
+                            <h3 class="font-black text-sm ${isBlocked ? 'text-red-700 line-through' : 'text-slate-800'}">${u.name}</h3>
+                            <div class="flex items-center gap-2 mt-0.5">
+                                <span class="text-[10px] text-slate-500 font-mono">@${u.username}</span>
+                                <span class="${roleColor} text-[8px] font-black px-1.5 py-0.5 rounded uppercase">${roleText}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${u.username !== 'admin' ? `
+                        <div class="flex gap-2">
+                            <button onclick="toggleUser('${u.id}')" class="w-8 h-8 rounded-full flex items-center justify-center border transition-colors ${isBlocked ? 'border-emerald-200 bg-emerald-50 text-emerald-600' : 'border-amber-200 bg-amber-50 text-amber-600'}" title="${isBlocked ? 'Desbloquear' : 'Bloquear'}">
+                                ${isBlocked ? '&#10004;' : '&#9888;'}
+                            </button>
+                            <button onclick="deleteUser('${u.id}')" class="w-8 h-8 rounded-full border border-red-200 bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100">
+                                &#128465;
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+                `
+            }).join('');
+        }
+
+        function toggleUser(id) {
+            const user = DB.users.find(u => u.id == id);
+            if(user) user.status = user.status === 'active' ? 'blocked' : 'active';
+            renderAdminUsers();
+        }
+
+        function deleteUser(id) {
+            if(confirm("¿Eliminar usuario definitivamente?")) {
+                DB.users = DB.users.filter(u => u.id != id);
+                renderAdminUsers();
+            }
+        }
+
+        function saveConfig() {
+            DB.config.name = document.getElementById('config-name').value || 'FerreRutas';
+            DB.config.color = document.getElementById('config-color').value;
+            applyTheme();
+            
+            const btn = document.getElementById('btn-save-config');
+            const originalText = btn.innerText;
+            btn.innerText = "¡Guardado!";
+            btn.classList.add('bg-emerald-500');
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.classList.remove('bg-emerald-500');
+                btn.style.backgroundColor = DB.config.color;
+            }, 2000);
+        }
+
+        function openStoreModal() { alert("Simulación: Abriendo modal de nueva tienda con mapa..."); }
+        function openUserModal() { alert("Simulación: Abriendo modal de nuevo usuario..."); }
+
+
+        // --- DRIVER DASHBOARD ---
+        function setupDriverView() {
+            document.getElementById('driver-user-name-map').innerText = currentUser.name;
+            const initials = currentUser.name.split(' ').map(n=>n[0]).join('').substring(0,2);
+            document.getElementById('driver-avatar-map').innerText = initials;
+            document.getElementById('driver-avatar-normal').innerText = initials;
+            
+            // Inicializar mapa si no existe
+            setTimeout(() => {
+                if(!map) {
+                    map = L.map('map', { zoomControl: false }).setView([-17.7833, -63.1833], 13);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                        attribution: '&copy; OpenStreetMap'
+                    }).addTo(map);
+                }
+                map.invalidateSize();
+                renderMarkers('');
+                renderList('');
+                updateRouteUI();
+            }, 100);
+        }
+
+        function showDriverTab(tab) {
+            ['map', 'list', 'route'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-btn-${t}`);
+                btn.classList.remove('text-blue-600');
+                btn.classList.add('text-slate-400');
+                btn.style.color = ""; // reset brand
+            });
+
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tab}`);
+            activeBtn.classList.remove('text-slate-400');
+            activeBtn.style.color = DB.config.color;
+
+            // Manejo de Headers
+            if(tab === 'map') {
+                document.getElementById('driver-header-map').classList.remove('opacity-0', 'pointer-events-none');
+                document.getElementById('driver-header-normal').classList.add('hidden');
+                setTimeout(()=> map.invalidateSize(), 50);
+            } else {
+                document.getElementById('driver-header-map').classList.add('opacity-0', 'pointer-events-none');
+                document.getElementById('driver-header-normal').classList.remove('hidden');
+                document.getElementById('driver-tab-title').innerText = tab === 'list' ? 'Directorio' : 'Mi Ruta de Hoy';
+                if(tab === 'list') renderList(document.getElementById('list-search').value);
+                if(tab === 'route') renderRoute();
+            }
+        }
+
+        function renderMarkers(filterQuery) {
+            if(!map) return;
+            
+            // Limpiar marcadores viejos
+            Object.values(markers).forEach(m => m.remove());
+            markers = {};
+            
+            const q = filterQuery.toLowerCase();
+            const filtered = DB.stores.filter(s => s.name.toLowerCase().includes(q) || s.zone.toLowerCase().includes(q));
+
+            filtered.forEach(store => {
+                const isSelected = activeRouteIds.includes(store.id);
+                const isCurrent = currentSelectedStore && currentSelectedStore.id === store.id;
+                const order = isSelected ? activeRouteIds.indexOf(store.id) + 1 : '';
+                
+                let color = DB.config.color; // Brand
+                if(isSelected) color = '#10b981'; // Green
+                if(isCurrent && !isSelected) color = '#f59e0b'; // Orange
+
+                const iconHtml = `
+                    <div style="display:flex; flex-direction:column; align-items:center; transform: translate(-50%, -100%); width: 200px; cursor:pointer;">
+                        <div class="custom-pin ${isSelected ? 'in-route' : ''}" style="${!isSelected ? `background-color: ${color};` : ''} ${isCurrent ? 'transform: rotate(-45deg) scale(1.15);' : ''}">
+                            <span>${isSelected ? order : '&#128295;'}</span>
+                        </div>
+                        <div class="pin-label" style="${isSelected ? 'border-color: #10b981; color: #047857;' : ''}">${store.name}</div>
+                    </div>
+                `;
+
+                const icon = L.divIcon({ html: iconHtml });
+                const m = L.marker([store.lat, store.lng], { icon }).addTo(map);
+                
+                m.on('click', () => {
+                    currentSelectedStore = store;
+                    renderMarkers(document.getElementById('map-search').value); // Re-render para highlight
+                    showStoreDetail(store);
+                    map.flyTo([store.lat - 0.005, store.lng], 14, { duration: 0.5 });
+                });
+
+                markers[store.id] = m;
+            });
+
+            drawRouteLine();
+        }
+
+        function drawRouteLine() {
+            if(routePolyline) routePolyline.remove();
+            if(activeRouteIds.length > 1) {
+                const points = activeRouteIds.map(id => {
+                    const s = DB.stores.find(x => x.id == id);
+                    return [s.lat, s.lng];
+                });
+                routePolyline = L.polyline(points, { color: '#10b981', weight: 4, dashArray: '10, 10' }).addTo(map);
+            }
+        }
+
+        function filterMap() {
+            const q = document.getElementById('map-search').value;
+            renderMarkers(q);
+        }
+
+        function filterList() {
+            const q = document.getElementById('list-search').value;
+            renderList(q);
+        }
+
+        function showStoreDetail(store) {
+            document.getElementById('detail-name').innerText = store.name;
+            document.getElementById('detail-address').innerText = store.address;
+            document.getElementById('detail-category').innerText = store.category;
+            document.getElementById('detail-zone').innerText = `ZONA ${store.zone}`;
+            
+            const img = document.getElementById('detail-image');
+            img.src = store.image || 'https://images.unsplash.com/photo-1542880941-196142718cb4?auto=format&fit=crop&w=400&q=80&blur=2';
+            
+            const notesCont = document.getElementById('detail-notes-container');
+            if(store.notes) {
+                document.getElementById('detail-notes').innerText = store.notes;
+                notesCont.style.display = 'flex';
+            } else {
+                notesCont.style.display = 'none';
+            }
+
+            updateDetailButtons(store);
+            document.getElementById('store-detail').classList.remove('hidden');
+        }
+
+        function hideDetail() {
+            document.getElementById('store-detail').classList.add('hidden');
+            currentSelectedStore = null;
+            renderMarkers(document.getElementById('map-search').value);
+        }
+
+        function updateDetailButtons(store) {
+            const btn = document.getElementById('route-btn');
+            const isSelected = activeRouteIds.includes(store.id);
+            
+            if(isSelected) {
+                btn.className = "flex-1 py-4 rounded-xl font-black text-sm shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-100";
+                document.getElementById('route-btn-icon').innerHTML = "&#128465;";
+                document.getElementById('route-btn-text').innerText = "Quitar";
+                btn.style.backgroundColor = "";
+                btn.style.color = "";
+            } else {
+                btn.className = "flex-1 py-4 rounded-xl font-black text-sm shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 text-white";
+                document.getElementById('route-btn-icon').innerHTML = "&#10004;";
+                document.getElementById('route-btn-text').innerText = "Añadir a ruta";
+                btn.style.backgroundColor = DB.config.color;
+            }
+        }
+
+        function toggleRouteFromDetail() {
+            if(currentSelectedStore) toggleRouteAction(currentSelectedStore.id);
+        }
+
+        function toggleRouteAction(id) {
+            if(activeRouteIds.includes(id)) {
+                activeRouteIds = activeRouteIds.filter(x => x !== id);
+            } else {
+                activeRouteIds.push(id);
+            }
+            updateRouteUI();
+            if(currentSelectedStore && currentSelectedStore.id === id) updateDetailButtons(currentSelectedStore);
+            renderMarkers(document.getElementById('map-search').value);
+            if(document.getElementById('view-list').classList.contains('hidden') === false) filterList();
+            if(document.getElementById('view-route').classList.contains('hidden') === false) renderRoute();
+        }
+
+        function updateRouteUI() {
+            const count = activeRouteIds.length;
+            const badgeNav = document.getElementById('nav-route-badge');
+            const badgeMap = document.getElementById('route-badge-map');
+            const countMap = document.getElementById('route-count-map');
+
+            if(count > 0) {
+                badgeNav.innerText = count;
+                badgeNav.classList.remove('hidden');
+                countMap.innerText = `${count} en ruta`;
+                badgeMap.classList.remove('hidden');
+            } else {
+                badgeNav.classList.add('hidden');
+                badgeMap.classList.add('hidden');
+            }
+        }
+
+        function openGPS(lat, lng) {
+            window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`);
+        }
+
+        function openGPSFromDetail() {
+            if(currentSelectedStore) openGPS(currentSelectedStore.lat, currentSelectedStore.lng);
+        }
+
+        // --- LIST VIEW ---
+        function renderList(query) {
+            const cont = document.getElementById('store-list-container');
+            const empty = document.getElementById('empty-list-msg');
+            const q = query.toLowerCase();
+            const filtered = DB.stores.filter(s => s.name.toLowerCase().includes(q) || s.address.toLowerCase().includes(q) || s.zone.toLowerCase().includes(q));
+
+            if(filtered.length === 0) {
+                cont.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            
+            empty.classList.add('hidden');
+            cont.innerHTML = filtered.map(store => {
+                const isSelected = activeRouteIds.includes(store.id);
+                return `
+                <div class="bg-white p-3 rounded-2xl shadow-sm border-2 transition-all flex gap-3 ${isSelected ? 'border-emerald-500 bg-emerald-50/20' : 'border-transparent'}">
+                    <button onclick="toggleRouteAction(${store.id})" class="mt-1 flex-shrink-0 text-3xl leading-none ${isSelected ? 'text-emerald-500' : 'text-slate-200'}">
+                        ${isSelected ? '&#9745;' : '&#9744;'}
+                    </button>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-black text-slate-800 text-lg leading-tight">${store.name}</h3>
+                            <span class="text-[9px] uppercase font-black bg-slate-100 text-slate-600 px-2 py-1 rounded">${store.zone}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1 font-medium">${store.address}</p>
+                        <div class="flex justify-between items-center mt-3 pt-3 border-t border-slate-100">
+                            <button onclick="openFeedbackFromList(${store.id})" class="text-blue-600 text-[10px] font-black uppercase flex items-center gap-1">
+                                &#128172; Reportar
+                            </button>
+                            ${store.feedback.length > 0 ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-black">${store.feedback.length} notas</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // --- ROUTE VIEW ---
+        function renderRoute() {
+            const cont = document.getElementById('route-list-container');
+            const empty = document.getElementById('empty-route-msg');
+
+            if(activeRouteIds.length === 0) {
+                cont.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            
+            let html = '<div class="absolute left-6 top-6 bottom-6 w-1 bg-emerald-200 z-0 rounded-full"></div>';
+            
+            html += activeRouteIds.map((id, index) => {
+                const store = DB.stores.find(x => x.id === id);
+                return `
+                <div class="relative z-10 flex gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                    <div class="w-12 h-12 flex-shrink-0 bg-emerald-500 text-white rounded-full flex items-center justify-center font-black text-xl shadow-md border-4 border-white -ml-2">
+                        ${index + 1}
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-black text-slate-800 text-lg leading-tight">${store.name}</h3>
+                        <p class="text-xs text-slate-500 mt-1 mb-3 font-medium">${store.address}</p>
+                        <div class="flex gap-2">
+                            <button onclick="openGPS(${store.lat}, ${store.lng})" class="flex-1 bg-blue-600 text-white text-xs font-black py-3 rounded-xl shadow flex justify-center items-center gap-2" style="background-color: ${DB.config.color}">
+                                &#10148; Iniciar GPS
+                            </button>
+                            <button onclick="toggleRouteAction(${store.id})" class="px-4 bg-red-50 text-red-500 rounded-xl border border-red-100 font-black">
+                                &#10006;
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            
+            cont.innerHTML = html;
+        }
+
+        // --- FEEDBACK MODAL ---
+        function openFeedbackFromDetail() {
+            if(currentSelectedStore) openFeedbackModal(currentSelectedStore);
+        }
+
+        function openFeedbackFromList(id) {
+            const s = DB.stores.find(x => x.id == id);
+            if(s) openFeedbackModal(s);
+        }
+
+        function openFeedbackModal(store) {
+            document.getElementById('modal-feedback').classList.remove('hidden');
+            document.getElementById('modal-feedback').classList.add('flex');
+            document.getElementById('feedback-store-name').innerText = store.name;
+            document.getElementById('feedback-store-name').style.color = DB.config.color;
+            document.getElementById('btn-submit-feedback').style.backgroundColor = DB.config.color;
+            document.getElementById('feedback-text').value = '';
+            
+            // Adjuntar ID temporal al botón para saber a quién reportamos
+            document.getElementById('btn-submit-feedback').dataset.storeId = store.id;
+
+            const histCont = document.getElementById('feedback-history');
+            const histList = document.getElementById('feedback-history-list');
+            
+            if(store.feedback && store.feedback.length > 0) {
+                histList.innerHTML = store.feedback.map(f => `
+                    <div class="bg-amber-50 p-2.5 rounded-xl text-xs border border-amber-100">
+                        <span class="font-black text-amber-800">${f.driver}:</span> <span class="text-slate-700 font-medium">${f.text}</span>
+                    </div>
+                `).join('');
+                histCont.classList.remove('hidden');
+            } else {
+                histCont.classList.add('hidden');
+            }
+        }
+
+        function closeFeedbackModal() {
+            document.getElementById('modal-feedback').classList.add('hidden');
+            document.getElementById('modal-feedback').classList.remove('flex');
+        }
+
+        function submitFeedback() {
+            const txt = document.getElementById('feedback-text').value.trim();
+            if(!txt) return;
+
+            const storeId = document.getElementById('btn-submit-feedback').dataset.storeId;
+            const storeIndex = DB.stores.findIndex(s => s.id == storeId);
+            
+            if(storeIndex > -1) {
+                DB.stores[storeIndex].feedback.push({
+                    text: txt,
+                    driver: currentUser.name,
+                    date: 'Hoy'
+                });
+                
+                alert("¡Reporte enviado al Administrador!");
+                closeFeedbackModal();
+                
+                // Actualizar vistas si aplican
+                if(!document.getElementById('view-list').classList.contains('hidden')) filterList();
+            }
+        }
+
+        // INICIAR
+        window.onload = initApp;
+
+    </script>
+</body>
 </html>
+```
+
+### Paso 3: Guardar el código en GitHub
+
+1.  Una vez pegado el código, en la esquina superior derecha del recuadro de texto en GitHub, haz clic en el botón verde **"Commit changes..."** (Guardar cambios).
+2.  Te saldrá un cuadrito preguntando un mensaje, déjalo como está y vuelve a hacer clic en el botón verde **"Commit changes"**.
+
+¡Listo! Eso es TODO lo que tienes que hacer.
+
+### Paso 4: Obtener el enlace en GitHub Pages
+
+GitHub se encargará de publicar este archivo HTML.
+
+1.  Ve a **Settings** (la tuerquita arriba).
+2.  Ve a **Pages** (en el menú de la izquierda).
+3.  Espera 1 o 2 minutos y recarga la página (`F5`).
+4.  Aparecerá el mensaje con tu enlace: **"Your site is live at [TU ENLACE]"**.
+
+Este enlace funciona siempre y no depende de Vercel. ¡Pruébalo!
