@@ -38,8 +38,8 @@
             </div>
             
             <div class="mt-6 p-3 bg-blue-50 rounded-xl text-xs text-blue-800">
-                <span class="font-bold">Cuentas de prueba:</span><br>
-                Administrador: <code class="bg-white px-1 rounded">admin</code> / <code class="bg-white px-1 rounded">123</code><br>
+                <span class="font-bold">Cuentas de prueba iniciales:</span><br>
+                Admin: <code class="bg-white px-1 rounded">admin</code> / <code class="bg-white px-1 rounded">123</code><br>
                 Repartidor: <code class="bg-white px-1 rounded">juan</code> / <code class="bg-white px-1 rounded">123</code>
             </div>
         </div>
@@ -66,18 +66,47 @@
                 <div id="map" class="w-full h-full"></div>
             </div>
 
+            <div id="map-picker-banner" class="hidden absolute top-4 left-4 right-4 md:left-auto md:w-96 bg-blue-600 text-white p-3 rounded-xl shadow-2xl z-[40] flex justify-between items-center animate-bounce">
+                <span class="text-xs font-bold">📍 Toca el mapa para fijar el pin</span>
+                <button onclick="cancelMapPicker()" class="bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-xs font-bold transition">Cancelar</button>
+            </div>
+
+            <div id="profile-modal" class="hidden absolute inset-0 z-[50] bg-black/50 flex justify-center items-center p-4">
+                <div class="bg-white p-5 rounded-2xl shadow-xl w-full max-w-sm">
+                    <h3 class="font-black text-gray-800 text-lg mb-3 border-b pb-2">👤 Mi Perfil</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 uppercase">Usuario (Login)</label>
+                            <input type="text" id="prof-username" class="w-full p-2 bg-gray-100 border rounded-lg text-sm text-gray-500" disabled>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 uppercase">Nombre a mostrar</label>
+                            <input type="text" id="prof-name" class="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 uppercase">Nueva Contraseña</label>
+                            <input type="text" id="prof-pass" class="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="flex space-x-2 mt-4 pt-2">
+                            <button onclick="saveProfile()" class="flex-1 bg-blue-600 text-white font-bold py-2 rounded-lg">Guardar Datos</button>
+                            <button onclick="closeProfileForm()" class="bg-gray-200 text-gray-700 font-bold px-4 py-2 rounded-lg">Cerrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="admin-panel" class="hidden w-full md:w-96 bg-white border-r md:border-l border-gray-200 flex flex-col absolute md:relative inset-0 z-[20] md:z-auto transition-transform transform translate-x-full md:translate-x-0 overflow-hidden">
                 <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-                    <h3 class="font-black text-gray-800 text-base">Directorio de Tiendas</h3>
+                    <h3 class="font-black text-gray-800 text-base">Directorio</h3>
                     <div class="flex space-x-1">
+                        <button onclick="showProfileForm()" class="bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-gray-300">👤 Perfil</button>
                         <button onclick="showStoreForm()" class="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-700 shadow-sm">+ Agregar</button>
-                        <button onclick="toggleAdminPanelMobile()" class="md:hidden bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-lg">Cerrar</button>
+                        <button onclick="toggleAdminPanelMobile()" class="md:hidden bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-lg">X</button>
                     </div>
                 </div>
 
-                <div id="store-form-container" class="hidden p-4 border-b border-blue-100 bg-blue-50/50 space-y-3 overflow-y-auto max-h-[60%] shadow-inner">
+                <div id="store-form-container" class="hidden p-4 border-b border-blue-100 bg-blue-50/50 space-y-3 overflow-y-auto max-h-[65%] shadow-inner">
                     <h4 class="text-xs font-black text-blue-800 uppercase tracking-wider" id="form-title">Nueva Ferretería</h4>
-                    <p class="text-[10px] text-blue-600 bg-blue-100/50 p-2 rounded-lg">💡 <strong>Tip:</strong> Puedes rellenar la latitud y longitud haciendo clic directo en cualquier punto del mapa.</p>
                     <input type="hidden" id="form-id">
                     <div class="grid grid-cols-2 gap-2">
                         <div class="col-span-2">
@@ -85,12 +114,28 @@
                             <input type="text" id="form-name" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div class="col-span-2">
-                            <label class="text-[10px] font-bold text-gray-500">Dirección / Ubicación</label>
+                            <label class="text-[10px] font-bold text-gray-500">Dirección</label>
                             <input type="text" id="form-address" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500">
                         </div>
+                        
+                        <div class="col-span-2 mt-1">
+                            <button onclick="activateMapPicker()" class="w-full bg-blue-100 text-blue-700 border border-blue-300 text-[11px] font-bold py-2 rounded-lg flex items-center justify-center hover:bg-blue-200 transition">
+                                📍 Toca aquí para ubicar en el mapa
+                            </button>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500">Latitud</label>
+                            <input type="number" step="any" id="form-lat" class="w-full p-2 text-xs bg-gray-100 border rounded-lg outline-none" readonly>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500">Longitud</label>
+                            <input type="number" step="any" id="form-lng" class="w-full p-2 text-xs bg-gray-100 border rounded-lg outline-none" readonly>
+                        </div>
+
                         <div>
                             <label class="text-[10px] font-bold text-gray-500">Zona</label>
-                            <input type="text" id="form-zone" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Norte">
+                            <input type="text" id="form-zone" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="text-[10px] font-bold text-gray-500">Categoría</label>
@@ -100,21 +145,13 @@
                                 <option value="Destacado">Destacado</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-500">Latitud</label>
-                            <input type="number" step="any" id="form-lat" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-500">Longitud</label>
-                            <input type="number" step="any" id="form-lng" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
                         <div class="col-span-2">
-                            <label class="text-[10px] font-bold text-gray-500">Notas de Entrega / Teléfono</label>
-                            <input type="text" id="form-notes" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Recibe Don Carlos">
+                            <label class="text-[10px] font-bold text-gray-500">Notas Adicionales</label>
+                            <input type="text" id="form-notes" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500">
                         </div>
                     </div>
-                    <div class="flex space-x-2 pt-1">
-                        <button onclick="saveStoreData()" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 rounded-lg shadow-sm">Guardar Datos</button>
+                    <div class="flex space-x-2 pt-2">
+                        <button onclick="saveStoreData()" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 rounded-lg shadow-sm">Guardar Ferretería</button>
                         <button onclick="hideStoreForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 text-xs font-bold px-3 py-2 rounded-lg">Cancelar</button>
                     </div>
                 </div>
@@ -125,11 +162,11 @@
 
             <div id="driver-panel" class="hidden absolute bottom-4 left-4 right-4 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-[20] max-w-sm mx-auto flex flex-col max-h-[40%] overflow-hidden">
                 <div class="flex justify-between items-center mb-2 pb-2 border-b">
-                    <h3 class="font-black text-gray-800 text-sm flex items-center">📦 Mi Ruta del Día</h3>
-                    <span class="text-[10px] font-bold px-2 py-0.5 bg-green-100 text-green-800 rounded-full" id="route-progress">0/3 Entregas</span>
+                    <h3 class="font-black text-gray-800 text-sm flex items-center">📦 Mi Ruta</h3>
+                    <span class="text-[10px] font-bold px-2 py-0.5 bg-green-100 text-green-800 rounded-full" id="route-progress">0/0 Entregas</span>
                 </div>
                 <div class="flex-1 overflow-y-auto space-y-2" id="driver-tasks-container">
-                    </div>
+                </div>
             </div>
 
         </main>
@@ -152,125 +189,124 @@
     </div>
 
     <script>
-        // Datos Iniciales Base (Se usarán si la memoria local está vacía)
-        const defaultFreterias = [
-            { id: 1, name: "Ferrecentro El Constructor", address: "Av. Cristobal de Mendoza #420", zone: "Norte", category: "Mayorista", lat: -17.7682, lng: -63.1815, notes: "Dejar pedido en almacén central. Preguntar por Don Lucas." },
-            { id: 2, name: "Ferretería Molina", address: "Av. San Aurelio esq. 3er Anillo", zone: "Sur", category: "Minorista", lat: -17.8015, lng: -63.1652, notes: "Cobro contra entrega en efectivo obligatoriamente." },
-            { id: 3, name: "Ferretería Hilda", address: "Doble Vía a La Guardia KM 6", zone: "Oeste", category: "Destacado", lat: -17.8210, lng: -63.2214, notes: "Llamar 15 minutos antes al 77012345." }
-        ];
-
-        // Estado Global
         let ferreterias = [];
+        let systemUsers = [];
         let currentUser = null;
         let map = null;
         let markersGroup = null;
         let activeTab = 'mapa';
-        let driverRouteIds = [1, 2, 3]; // Simulación de ruta asignada a Juan
+        let driverRouteIds = [1, 2, 3]; 
         let completedRouteIds = [];
+        let isPickingLocation = false; // Variable para saber si estamos acomodando el mapa
+        let tempMarker = null;
 
-        // Inicializar datos cargando desde LocalStorage
+        // Iniciar Datos (Ferreterías y Usuarios)
         function initData() {
-            const savedData = localStorage.getItem('mejin_ferreterias');
+            const savedData = localStorage.getItem('mejin_ferreterias_v3');
             if (savedData) {
                 ferreterias = JSON.parse(savedData);
             } else {
-                ferreterias = defaultFreterias;
-                localStorage.setItem('mejin_ferreterias', JSON.stringify(ferreterias));
+                ferreterias = [
+                    { id: 1, name: "Ferrecentro El Constructor", address: "Av. Cristobal de Mendoza #420", zone: "Norte", category: "Mayorista", lat: -17.7682, lng: -63.1815, notes: "Dejar pedido en almacén central." },
+                    { id: 2, name: "Ferretería Molina", address: "Av. San Aurelio esq. 3er Anillo", zone: "Sur", category: "Minorista", lat: -17.8015, lng: -63.1652, notes: "Cobro contra entrega." },
+                    { id: 3, name: "Ferretería Hilda", address: "Doble Vía a La Guardia KM 6", zone: "Oeste", category: "Destacado", lat: -17.8210, lng: -63.2214, notes: "Llamar antes." }
+                ];
+                localStorage.setItem('mejin_ferreterias_v3', JSON.stringify(ferreterias));
+            }
+
+            const savedUsers = localStorage.getItem('mejin_usuarios');
+            if (savedUsers) {
+                systemUsers = JSON.parse(savedUsers);
+            } else {
+                systemUsers = [
+                    { username: "admin", password: "123", name: "Administrador Central", role: "admin", avatar: "AD" },
+                    { username: "juan", password: "123", name: "Juan Pérez", role: "driver", avatar: "JP" }
+                ];
+                localStorage.setItem('mejin_usuarios', JSON.stringify(systemUsers));
             }
         }
 
-        // Cargar Mapa centrado en Santa Cruz de la Sierra
         function initMap() {
             if (map) return;
             map = L.map('map', { zoomControl: false }).setView([-17.7833, -63.1821], 13);
-            L.tileLayer('https://{s}.tile.boundaryandcode.com/raster/v1/voyager/{z}/{x}/{y}.png' || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
-            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
             markersGroup = L.layerGroup().addTo(map);
 
-            // ESCUCHADOR DE CLICS EN EL MAPA PARA RELLENAR COORDENADAS AUTOMÁTICAMENTE
+            // LOGICA PARA ATRAPAR EL CLIC AL ACOMODAR EL MAPA
             map.on('click', function(e) {
-                const isFormOpen = !document.getElementById('store-form-container').classList.contains('hidden');
-                if (isFormOpen && currentUser && currentUser.role === 'admin') {
+                if (isPickingLocation) {
                     document.getElementById('form-lat').value = e.latlng.lat.toFixed(6);
                     document.getElementById('form-lng').value = e.latlng.lng.toFixed(6);
                     
-                    // Alerta temporal visual en el formulario
-                    document.getElementById('form-title').innerText = "📍 Coordenadas Capturadas";
-                    setTimeout(() => {
-                        document.getElementById('form-title').innerText = document.getElementById('form-id').value ? "Editar Ferretería" : "Nueva Ferretería";
-                    }, 1200);
+                    if(tempMarker) tempMarker.remove();
+                    const icon = L.divIcon({ html: `<div style="font-size:24px;">📍</div>`, className: '' });
+                    tempMarker = L.marker([e.latlng.lat, e.latlng.lng], {icon}).addTo(map);
+                    
+                    // Retornar al panel después de tocar el mapa
+                    cancelMapPicker();
                 }
             });
         }
 
-        // Dibujar Marcadores dinámicamente en el mapa
+        // Mostrar el banner flotante y esconder panel para dejar el mapa libre
+        function activateMapPicker() {
+            isPickingLocation = true;
+            document.getElementById('admin-panel').classList.add('translate-x-full'); // Esconde panel
+            document.getElementById('map-picker-banner').classList.remove('hidden'); // Muestra banner
+        }
+
+        function cancelMapPicker() {
+            isPickingLocation = false;
+            document.getElementById('map-picker-banner').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('translate-x-full'); // Regresa el panel
+        }
+
         function updateMapMarkers() {
             if (!markersGroup) return;
             markersGroup.clearLayers();
 
-            let storesToShow = currentUser && currentUser.role === 'driver' 
-                ? ferreterias.filter(f => driverRouteIds.includes(f.id))
-                : ferreterias;
+            let storesToShow = currentUser && currentUser.role === 'driver' ? ferreterias.filter(f => driverRouteIds.includes(f.id)) : ferreterias;
 
             storesToShow.forEach(store => {
                 const isCompleted = completedRouteIds.includes(store.id);
                 const markerColor = isCompleted ? '#10B981' : (store.category === 'Mayorista' ? '#2563EB' : '#F59E0B');
-                
-                // Crear icono personalizado
                 const customIcon = L.divIcon({
-                    html: `<div style="background-color: ${markerColor}; width: 24px; height: 24px; rounded-full; display: flex; items-center; justify-center; border: 2px solid white; border-radius: 50%; shadow-md; text-shadow: none; color: white; font-size: 11px; font-weight: bold;">🛠️</div>`,
-                    className: '',
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
+                    html: `<div style="background-color: ${markerColor}; width: 24px; height: 24px; display: flex; align-items:center; justify-content:center; border: 2px solid white; border-radius: 50%; color: white; font-size: 11px;">🛠️</div>`,
+                    className: '', iconSize: [24, 24], iconAnchor: [12, 12]
                 });
-
                 const marker = L.marker([store.lat, store.lng], { icon: customIcon });
-                
-                // Ventana emergente con info detallada
-                const popupContent = `
-                    <div class="p-1 font-sans">
-                        <h4 class="font-black text-gray-800 text-sm mb-0.5">${store.name}</h4>
-                        <p class="text-xs text-blue-600 font-bold mb-1">📍 ${store.zone} - ${store.category}</p>
-                        <p class="text-[11px] text-gray-600 mb-1">🏠 ${store.address}</p>
-                        <p class="text-[10px] bg-gray-50 border p-1 rounded text-gray-500 italic">📝 ${store.notes || 'Sin notas'}</p>
-                    </div>
-                `;
-                marker.bindPopup(popupContent);
+                marker.bindPopup(`<div class="p-1"><h4 class="font-black text-sm">${store.name}</h4><p class="text-xs text-gray-500">${store.address}</p></div>`);
                 markersGroup.addLayer(marker);
             });
         }
 
-        // Sistema de Login
+        // Lógica de Login
         function handleLogin() {
             const userIn = document.getElementById('username').value.trim().toLowerCase();
             const passIn = document.getElementById('password').value;
 
-            if (userIn === 'admin' && passIn === '123') {
-                currentUser = { name: "Xavi Williams", role: "admin", avatar: "XW" };
-            } else if (userIn === 'juan' && passIn === '123') {
-                currentUser = { name: "Juan Pérez", role: "driver", avatar: "JP" };
+            const userFound = systemUsers.find(u => u.username === userIn && u.password === passIn);
+
+            if (userFound) {
+                currentUser = userFound;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-screen').classList.remove('hidden');
+                
+                document.getElementById('app-title').innerText = currentUser.name;
+                document.getElementById('user-avatar').innerText = currentUser.avatar;
+                document.getElementById('user-role').innerText = currentUser.role === 'admin' ? 'Administrador' : 'Repartidor';
+                document.getElementById('tab-datos-text').innerText = currentUser.role === 'admin' ? 'Directorio' : 'Lista';
+
+                initMap();
+                renderAdminList();
+                renderDriverTasks();
+                updateMapMarkers();
+                switchTab('mapa');
             } else {
                 alert("Usuario o contraseña incorrectos.");
-                return;
             }
-
-            // Configurar interfaz según rol
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('user-avatar').innerText = currentUser.avatar;
-            document.getElementById('user-role').innerText = currentUser.role === 'admin' ? 'Administrador' : 'Repartidor';
-            document.getElementById('tab-datos-text').innerText = currentUser.role === 'admin' ? 'Directorio' : 'Lista';
-
-            initMap();
-            renderAdminList();
-            renderDriverTasks();
-            updateMapMarkers();
-            switchTab('mapa');
         }
 
-        // Cierre de sesión
         function handleLogout() {
             currentUser = null;
             document.getElementById('app-screen').classList.add('hidden');
@@ -279,24 +315,62 @@
             document.getElementById('password').value = '';
         }
 
-        // Renderizar el Directorio completo para el Administrador
+        // --- FUNCIONES DE PERFIL DE USUARIO ---
+        function showProfileForm() {
+            document.getElementById('profile-modal').classList.remove('hidden');
+            document.getElementById('prof-username').value = currentUser.username;
+            document.getElementById('prof-name').value = currentUser.name;
+            document.getElementById('prof-pass').value = currentUser.password;
+        }
+
+        function closeProfileForm() {
+            document.getElementById('profile-modal').classList.add('hidden');
+        }
+
+        function saveProfile() {
+            const newName = document.getElementById('prof-name').value.trim();
+            const newPass = document.getElementById('prof-pass').value.trim();
+            
+            if(!newName || !newPass) {
+                alert("Los campos no pueden estar vacíos.");
+                return;
+            }
+
+            // Actualizar datos del usuario activo
+            currentUser.name = newName;
+            currentUser.password = newPass;
+            currentUser.avatar = newName.substring(0, 2).toUpperCase();
+
+            // Guardar en la base de datos local
+            const index = systemUsers.findIndex(u => u.username === currentUser.username);
+            if(index !== -1) {
+                systemUsers[index] = currentUser;
+                localStorage.setItem('mejin_usuarios', JSON.stringify(systemUsers));
+            }
+
+            // Refrescar header
+            document.getElementById('app-title').innerText = currentUser.name;
+            document.getElementById('user-avatar').innerText = currentUser.avatar;
+
+            closeProfileForm();
+            alert("¡Tu perfil se ha actualizado correctamente!");
+        }
+
+        // --- RENDERIZADO DE VISTAS (VERSION ORIGINAL) ---
         function renderAdminList() {
             const container = document.getElementById('store-list-container');
             container.innerHTML = '';
-
             ferreterias.forEach(store => {
                 const card = document.createElement('div');
-                card.className = "p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow transition flex flex-col space-y-1.5";
+                card.className = "p-3 bg-white border border-gray-100 rounded-xl shadow-sm flex flex-col space-y-1.5";
                 card.innerHTML = `
                     <div class="flex justify-between items-start">
                         <div>
                             <h4 class="font-black text-gray-800 text-xs">${store.name}</h4>
-                            <p class="text-[10px] font-bold text-blue-600">📍 ${store.zone} · ${store.category}</p>
+                            <p class="text-[10px] font-bold text-blue-600">📍 ${store.zone}</p>
                         </div>
-                        <span class="text-[9px] text-gray-400 bg-gray-50 px-1.5 py-0.5 border rounded-md font-mono">${store.lat.toFixed(3)}, ${store.lng.toFixed(3)}</span>
                     </div>
                     <p class="text-[11px] text-gray-500">🏠 ${store.address}</p>
-                    <p class="text-[10px] text-gray-400 italic line-clamp-1">📝 ${store.notes || 'Sin anotaciones adicionales'}</p>
                     <div class="flex justify-end space-x-1 pt-1 border-t border-gray-50">
                         <button onclick="editStore(${store.id})" class="bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[10px] px-2.5 py-1 rounded-md transition">📝 Editar</button>
                         <button onclick="deleteStore(${store.id})" class="bg-red-50 text-red-600 hover:bg-red-100 font-bold text-[10px] px-2.5 py-1 rounded-md transition">🗑️ Borrar</button>
@@ -306,89 +380,64 @@
             });
         }
 
-        // Renderizar la Hoja de Ruta del Repartidor
         function renderDriverTasks() {
             const container = document.getElementById('driver-tasks-container');
             container.innerHTML = '';
-            
             let tasks = ferreterias.filter(f => driverRouteIds.includes(f.id));
             let finishedCount = 0;
-
             tasks.forEach(store => {
                 const isDone = completedRouteIds.includes(store.id);
                 if (isDone) finishedCount++;
-
                 const item = document.createElement('div');
-                item.className = `p-2.5 border rounded-xl shadow-sm flex items-start space-x-2.5 transition ${isDone ? 'bg-green-50/70 border-green-200' : 'bg-white border-gray-100'}`;
+                item.className = `p-2.5 border rounded-xl flex items-start space-x-2.5 ${isDone ? 'bg-green-50' : 'bg-white'}`;
                 item.innerHTML = `
-                    <input type="checkbox" ${isDone ? 'checked' : ''} onclick="toggleDeliveryStatus(${store.id})" class="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                    <input type="checkbox" ${isDone ? 'checked' : ''} onclick="toggleDeliveryStatus(${store.id})" class="mt-1 w-4 h-4">
                     <div class="flex-1">
-                        <div class="flex justify-between">
-                            <h4 class="text-xs font-black ${isDone ? 'text-gray-400 line-through' : 'text-gray-800'}">${store.name}</h4>
-                            <button onclick="focusOnMap(${store.lat}, ${store.lng})" class="text-[10px] text-blue-600 font-black">📍 IR</button>
-                        </div>
+                        <h4 class="text-xs font-black ${isDone ? 'line-through text-gray-400' : ''}">${store.name}</h4>
                         <p class="text-[10px] text-gray-500">${store.address}</p>
-                        ${store.notes ? `<p class="text-[9px] bg-gray-50 p-1 rounded mt-1 border text-gray-500 italic">${store.notes}</p>` : ''}
                     </div>
                 `;
                 container.appendChild(item);
             });
-
-            // Actualizar Contadores Visuales
             document.getElementById('route-progress').innerText = `${finishedCount}/${tasks.length} Entregas`;
             const badge = document.getElementById('badge-ruta');
-            const pending = tasks.length - finishedCount;
-            if (pending > 0) {
-                badge.innerText = pending;
+            if (tasks.length - finishedCount > 0) {
+                badge.innerText = tasks.length - finishedCount;
                 badge.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
             }
         }
 
-        // Alternar estado de entrega (Completado / Pendiente)
         function toggleDeliveryStatus(id) {
             const idx = completedRouteIds.indexOf(id);
-            if (idx > -1) {
-                completedRouteIds.splice(idx, 1);
-            } else {
-                completedRouteIds.push(id);
-            }
+            if (idx > -1) completedRouteIds.splice(idx, 1);
+            else completedRouteIds.push(id);
             renderDriverTasks();
             updateMapMarkers();
         }
 
-        // Enfocar mapa en una coordenada concreta
-        function focusOnMap(lat, lng) {
-            if (!map) return;
-            map.flyTo([lat, lng], 16);
-            switchTab('mapa');
-        }
-
-        // FUNCIONES COMPLETAS DEL CRUD DE FERRETERÍAS (LOGICA ADMINISTRADOR)
+        // --- CRUD FERRETERÍAS ---
         function showStoreForm() {
             document.getElementById('store-form-container').classList.remove('hidden');
             document.getElementById('form-title').innerText = "Nueva Ferretería";
-            // Limpiar formulario
             document.getElementById('form-id').value = '';
             document.getElementById('form-name').value = '';
             document.getElementById('form-address').value = '';
             document.getElementById('form-zone').value = '';
-            document.getElementById('form-category').value = 'Mayorista';
-            document.getElementById('form-lat').value = '';
-            document.getElementById('form-lng').value = '';
+            document.getElementById('form-lat').value = '-17.7833';
+            document.getElementById('form-lng').value = '-63.1821';
             document.getElementById('form-notes').value = '';
         }
 
         function hideStoreForm() {
             document.getElementById('store-form-container').classList.add('hidden');
+            if(tempMarker) tempMarker.remove();
         }
 
-        // Rellenar formulario con datos para edición
         function editStore(id) {
             const store = ferreterias.find(f => f.id === id);
             if (!store) return;
-
             showStoreForm();
             document.getElementById('form-title').innerText = "Editar Ferretería";
             document.getElementById('form-id').value = store.id;
@@ -399,116 +448,73 @@
             document.getElementById('form-lat').value = store.lat;
             document.getElementById('form-lng').value = store.lng;
             document.getElementById('form-notes').value = store.notes || '';
-            
-            // Mover mapa al punto actual por comodidad
             map.flyTo([store.lat, store.lng], 15);
         }
 
-        // Guardar cambios en el array y persistir en memoria local
         function saveStoreData() {
             const idVal = document.getElementById('form-id').value;
             const name = document.getElementById('form-name').value.trim();
-            const address = document.getElementById('form-address').value.trim();
-            const zone = document.getElementById('form-zone').value.trim();
-            const category = document.getElementById('form-category').value;
             const lat = parseFloat(document.getElementById('form-lat').value);
             const lng = parseFloat(document.getElementById('form-lng').value);
-            const notes = document.getElementById('form-notes').value.trim();
 
-            if (!name || !address || isNaN(lat) || isNaN(lng)) {
-                alert("Por favor completa los campos obligatorios: Nombre, Dirección, Latitud y Longitud.");
-                return;
-            }
+            if (!name || isNaN(lat) || isNaN(lng)) { alert("Nombre y Ubicación son obligatorios."); return; }
 
             if (idVal) {
-                // Modo Edición
                 const store = ferreterias.find(f => f.id == idVal);
                 if (store) {
                     store.name = name;
-                    store.address = address;
-                    store.zone = zone;
-                    store.category = category;
-                    store.lat = lat;
-                    store.lng = lng;
-                    store.notes = notes;
+                    store.address = document.getElementById('form-address').value;
+                    store.zone = document.getElementById('form-zone').value;
+                    store.lat = lat; store.lng = lng;
                 }
             } else {
-                // Modo Nuevo Registro
-                const newId = ferreterias.length > 0 ? Math.max(...ferreterias.map(f => f.id)) + 1 : 1;
-                ferreterias.push({ id: newId, name, address, zone, category, lat, lng, notes });
-                // Asignar automáticamente a la ruta para pruebas visuales rápidos
-                if (!driverRouteIds.includes(newId)) driverRouteIds.push(newId);
+                const newId = ferreterias.length ? Math.max(...ferreterias.map(f => f.id)) + 1 : 1;
+                ferreterias.push({ 
+                    id: newId, name, lat, lng,
+                    address: document.getElementById('form-address').value,
+                    zone: document.getElementById('form-zone').value,
+                    category: document.getElementById('form-category').value
+                });
             }
 
-            // Sincronizar en LocalStorage
-            localStorage.setItem('mejin_ferreterias', JSON.stringify(ferreterias));
-
+            localStorage.setItem('mejin_ferreterias_v3', JSON.stringify(ferreterias));
             hideStoreForm();
             renderAdminList();
             renderDriverTasks();
             updateMapMarkers();
-            
-            // Pequeño aviso de éxito
-            alert("Información guardada de forma segura en la memoria de la aplicación.");
         }
 
-        // Borrar Registro
         function deleteStore(id) {
-            if (confirm("¿Estás 100% seguro de eliminar esta ferretería del sistema?")) {
+            if (confirm("¿Borrar ferretería?")) {
                 ferreterias = ferreterias.filter(f => f.id !== id);
-                localStorage.setItem('mejin_ferreterias', JSON.stringify(ferreterias));
-                
-                // Limpiar de rutas
-                driverRouteIds = driverRouteIds.filter(rid => rid !== id);
-                completedRouteIds = completedRouteIds.filter(cid => cid !== id);
-
-                renderAdminList();
-                renderDriverTasks();
-                updateMapMarkers();
+                localStorage.setItem('mejin_ferreterias_v3', JSON.stringify(ferreterias));
+                renderAdminList(); updateMapMarkers();
             }
         }
 
-        // Control Móvil del panel lateral
         function toggleAdminPanelMobile() {
-            const panel = document.getElementById('admin-panel');
-            panel.classList.toggle('translate-x-full');
+            document.getElementById('admin-panel').classList.toggle('translate-x-full');
         }
 
-        // Control de Pestañas Inferiores (Menú Móvil)
         function switchTab(tab) {
             activeTab = tab;
-            
-            // Reiniciar clases de diseño de pestañas
-            const tabs = ['mapa', 'datos', 'ruta'];
-            tabs.forEach(t => {
-                document.getElementById(`tab-${t}`).className = "flex flex-col items-center justify-center text-gray-400 transition";
-            });
+            ['mapa', 'datos', 'ruta'].forEach(t => document.getElementById(`tab-${t}`).className = "flex flex-col items-center justify-center text-gray-400 transition");
             document.getElementById(`tab-${tab}`).className = "flex flex-col items-center justify-center text-blue-600 transition";
 
-            // Ocultar paneles inicialmente
-            document.getElementById('admin-panel').classList.add('hidden');
             document.getElementById('admin-panel').classList.add('translate-x-full');
+            document.getElementById('admin-panel').classList.add('hidden');
             document.getElementById('driver-panel').classList.add('hidden');
 
-            // Mostrar el panel adecuado según el rol y la pestaña elegida
             if (tab === 'datos' && currentUser) {
                 if (currentUser.role === 'admin') {
                     document.getElementById('admin-panel').classList.remove('hidden');
                     document.getElementById('admin-panel').classList.remove('translate-x-full');
-                } else {
-                    document.getElementById('driver-panel').classList.remove('hidden');
-                }
-            } else if (tab === 'ruta' && currentUser) {
-                document.getElementById('driver-panel').classList.remove('hidden');
-            }
+                } else document.getElementById('driver-panel').classList.remove('hidden');
+            } else if (tab === 'ruta') document.getElementById('driver-panel').classList.remove('hidden');
             
-            // Forzar actualización del tamaño del mapa Leaflet al cambiar de vistas
-            if (map) {
-                setTimeout(() => { map.invalidateSize(); }, 200);
-            }
+            if (map) setTimeout(() => { map.invalidateSize(); }, 200);
         }
 
-        // Arrancar Datos al cargar la página
         initData();
     </script>
 </body>
