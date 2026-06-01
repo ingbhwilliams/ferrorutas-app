@@ -11,9 +11,12 @@
         body {
             height: 100dvh;
             overflow: hidden;
+            user-select: none;
         }
-        .leaflet-container {
-            font-family: inherit;
+        /* Ajuste para que los botones flotantes de Leaflet no estorben tanto en móvil */
+        .leaflet-touch .leaflet-bar {
+            border: none;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
     </style>
 </head>
@@ -21,408 +24,521 @@
 
     <div id="login-screen" class="flex-1 flex flex-col items-center justify-center p-4 bg-gradient-to-b from-blue-700 to-indigo-900">
         <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm text-center">
-            <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-4xl shadow-md">🗺️</div>
-            <h1 class="text-2xl font-black text-gray-800">FerreRutas Mejín</h1>
-            <p class="text-sm text-gray-500 mb-6">Gestión Logística Inteligente</p>
+            <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3 text-white text-3xl shadow-md">🗺️</div>
+            <h1 class="text-xl font-black text-gray-800">FerreRutas Mejín</h1>
+            <p class="text-xs text-gray-500 mb-5">Gestión Logística Inteligente</p>
             
-            <div class="space-y-4 text-left">
+            <div class="space-y-3 text-left">
                 <div>
-                    <label class="text-xs font-bold text-gray-600 block mb-1">Usuario</label>
-                    <input type="text" id="username" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="admin o juan">
+                    <label class="text-[11px] font-bold text-gray-600 block mb-1">Usuario</label>
+                    <input type="text" id="username" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="admin o juan">
                 </div>
                 <div>
-                    <label class="text-xs font-bold text-gray-600 block mb-1">Contraseña</label>
-                    <input type="password" id="password" class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="123">
+                    <label class="text-[11px] font-bold text-gray-600 block mb-1">Contraseña</label>
+                    <input type="password" id="password" class="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" placeholder="123">
                 </div>
-                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition shadow-lg text-sm">Ingresar</button>
+                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg text-sm mt-2">Ingresar</button>
             </div>
             
-            <div class="mt-6 p-3 bg-blue-50 rounded-xl text-xs text-blue-800">
-                <span class="font-bold">Cuentas de prueba:</span><br>
-                Administrador: <code class="bg-white px-1 rounded">admin</code> / <code class="bg-white px-1 rounded">123</code><br>
-                Repartidor: <code class="bg-white px-1 rounded">juan</code> / <code class="bg-white px-1 rounded">123</code>
+            <div class="mt-5 p-3 bg-blue-50 rounded-xl text-[11px] text-blue-800 text-left">
+                <span class="font-bold">Accesos Rápidos:</span><br>
+                • Admin: <code class="bg-white px-1 rounded">admin</code> / <code class="bg-white px-1 rounded">123</code><br>
+                • Chofer: <code class="bg-white px-1 rounded">juan</code> / <code class="bg-white px-1 rounded">123</code>
             </div>
         </div>
     </div>
 
     <div id="app-screen" class="hidden flex-1 flex flex-col h-full overflow-hidden">
         
-        <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm z-10">
+        <header class="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shadow-sm z-10">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-blue-100 text-blue-700 font-bold rounded-full flex items-center justify-center text-sm shadow-inner" id="user-avatar">AD</div>
+                <div class="w-9 h-9 bg-blue-600 text-white font-black rounded-full flex items-center justify-center text-xs shadow-md" id="user-avatar">AD</div>
                 <div>
-                    <h2 class="text-sm font-black text-gray-800" id="app-title">FerreRutas Mejín</h2>
-                    <p class="text-[11px] font-bold text-blue-600 uppercase tracking-wider" id="user-role">Administrador</p>
+                    <h2 class="text-xs font-black text-gray-800" id="user-display-name">Cargando...</h2>
+                    <p class="text-[10px] font-bold text-blue-600 uppercase tracking-wider shadow-none" id="user-role">Rol</p>
                 </div>
             </div>
-            <button onclick="handleLogout()" class="p-2 text-gray-400 hover:text-red-500 rounded-xl hover:bg-gray-50 transition text-xs font-bold flex items-center space-x-1">
+            <button onclick="handleLogout()" class="px-2.5 py-1.5 text-gray-500 hover:text-red-500 rounded-lg hover:bg-gray-50 transition text-xs font-bold flex items-center space-x-1 border">
                 <span>Salir</span> 🚪
             </button>
         </header>
 
-        <main class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+        <main class="flex-1 flex flex-col relative overflow-hidden">
             
-            <div class="flex-1 h-full relative">
+            <div id="map-container" class="absolute inset-0 w-full h-full z-0">
                 <div id="map" class="w-full h-full"></div>
+                
+                <div id="store-form-card" class="hidden absolute top-2 left-2 right-2 max-h-[70vh] bg-white rounded-2xl shadow-2xl border border-blue-100 p-4 z-[1000] overflow-y-auto md:max-w-md md:right-auto md:left-4">
+                    <div class="flex justify-between items-center mb-2 pb-1 border-b">
+                        <h4 class="text-xs font-black text-blue-800 uppercase tracking-wider" id="store-form-title">Configurar Ferretería</h4>
+                        <button onclick="closeStoreForm()" class="text-gray-400 hover:text-gray-600 text-sm font-bold">✕</button>
+                    </div>
+                    <p class="text-[10px] text-blue-700 bg-blue-50 p-2 rounded-lg mb-3">📍 <strong>¡Modo Ubicación Activo!</strong> Toca directamente cualquier punto del mapa de atrás con tu dedo para reubicar el pin comercial.</p>
+                    
+                    <input type="hidden" id="s-id">
+                    <div class="space-y-2">
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 block">Nombre del Negocio</label>
+                            <input type="text" id="s-name" class="w-full p-2 text-xs bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 block">Dirección / Calle</label>
+                            <input type="text" id="s-address" class="w-full p-2 text-xs bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 block">Zona</label>
+                                <input type="text" id="s-zone" class="w-full p-2 text-xs bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej: Plan 3000">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 block">Categoría</label>
+                                <select id="s-category" class="w-full p-2 text-xs bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="Mayorista">Mayorista</option>
+                                    <option value="Minorista">Minorista</option>
+                                    <option value="Destacado">Destacado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 bg-gray-50 p-2 rounded-lg border">
+                            <div>
+                                <label class="text-[9px] font-bold text-gray-400 block">Latitud</label>
+                                <input type="number" step="any" id="s-lat" class="w-full bg-white p-1 text-xs border rounded outline-none font-mono" readonly>
+                            </div>
+                            <div>
+                                <label class="text-[9px] font-bold text-gray-400 block">Longitud</label>
+                                <input type="number" step="any" id="s-lng" class="w-full bg-white p-1 text-xs border rounded outline-none font-mono" readonly>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold text-gray-500 block">Notas de Entrega / Encargado</label>
+                            <input type="text" id="s-notes" class="w-full p-2 text-xs bg-gray-50 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Ej: Recibe Ing. Williams">
+                        </div>
+                    </div>
+                    <div class="flex space-x-2 mt-4">
+                        <button onclick="saveStore()" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 rounded-xl shadow-md">Guardar Ferretería</button>
+                        <button onclick="closeStoreForm()" class="bg-gray-200 text-gray-700 text-xs font-bold px-4 py-2 rounded-xl">Cancelar</button>
+                    </div>
+                </div>
             </div>
 
-            <div id="admin-panel" class="hidden w-full md:w-96 bg-white border-r md:border-l border-gray-200 flex flex-col absolute md:relative inset-0 z-[20] md:z-auto transition-transform transform translate-x-full md:translate-x-0 overflow-hidden">
-                <div class="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-                    <h3 class="font-black text-gray-800 text-base">Directorio de Tiendas</h3>
-                    <div class="flex space-x-1">
-                        <button onclick="showStoreForm()" class="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg hover:bg-blue-700 shadow-sm">+ Agregar</button>
-                        <button onclick="toggleAdminPanelMobile()" class="md:hidden bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-lg">Cerrar</button>
+            <div id="management-view" class="hidden absolute inset-0 bg-white z-10 flex flex-col overflow-hidden">
+                <div class="p-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
+                    <div class="bg-gray-200 p-1 rounded-xl flex space-x-1">
+                        <button id="subtab-stores" onclick="switchManagementSubTab('stores')" class="px-3 py-1.5 text-xs font-black rounded-lg bg-white text-gray-800 shadow-sm transition">🏪 Tiendas</button>
+                        <button id="subtab-users" onclick="switchManagementSubTab('users')" class="px-3 py-1.5 text-xs font-black rounded-lg text-gray-500 hover:text-gray-800 transition">👥 Usuarios</button>
                     </div>
+                    
+                    <button id="btn-add-store" onclick="openNewStoreForm()" class="bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-blue-700 shadow-sm">+ Nueva Tienda</button>
+                    <button id="btn-add-user" onclick="openUserForm()" class="hidden bg-indigo-600 text-white text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-indigo-700 shadow-sm">+ Nuevo Usuario</button>
                 </div>
 
-                <div id="store-form-container" class="hidden p-4 border-b border-blue-100 bg-blue-50/50 space-y-3 overflow-y-auto max-h-[60%] shadow-inner">
-                    <h4 class="text-xs font-black text-blue-800 uppercase tracking-wider" id="form-title">Nueva Ferretería</h4>
-                    <p class="text-[10px] text-blue-600 bg-blue-100/50 p-2 rounded-lg">💡 <strong>Tip:</strong> Puedes rellenar la latitud y longitud haciendo clic directo en cualquier punto del mapa.</p>
-                    <input type="hidden" id="form-id">
-                    <div class="grid grid-cols-2 gap-2">
-                        <div class="col-span-2">
-                            <label class="text-[10px] font-bold text-gray-500">Nombre Comercial</label>
-                            <input type="text" id="form-name" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div class="col-span-2">
-                            <label class="text-[10px] font-bold text-gray-500">Dirección / Ubicación</label>
-                            <input type="text" id="form-address" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-500">Zona</label>
-                            <input type="text" id="form-zone" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Norte">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-500">Categoría</label>
-                            <select id="form-category" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500">
-                                <option value="Mayorista">Mayorista</option>
-                                <option value="Minorista">Minorista</option>
-                                <option value="Destacado">Destacado</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-500">Latitud</label>
-                            <input type="number" step="any" id="form-lat" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="text-[10px] font-bold text-gray-500">Longitud</label>
-                            <input type="number" step="any" id="form-lng" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div class="col-span-2">
-                            <label class="text-[10px] font-bold text-gray-500">Notas de Entrega / Teléfono</label>
-                            <input type="text" id="form-notes" class="w-full p-2 text-xs bg-white border rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ej: Recibe Don Carlos">
-                        </div>
+                <div id="stores-list-pane" class="flex-1 overflow-y-auto p-3 space-y-2">
                     </div>
-                    <div class="flex space-x-2 pt-1">
-                        <button onclick="saveStoreData()" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 rounded-lg shadow-sm">Guardar Datos</button>
-                        <button onclick="hideStoreForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 text-xs font-bold px-3 py-2 rounded-lg">Cancelar</button>
+
+                <div id="users-list-pane" class="hidden flex-1 overflow-y-auto p-3 space-y-2">
+                    </div>
+
+                <div id="user-form-modal" class="hidden absolute inset-0 bg-gray-900/40 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl p-5 w-full max-w-sm space-y-3">
+                        <h3 class="font-black text-gray-800 text-sm border-b pb-1.5" id="user-form-title">Nuevo Perfil de Usuario</h3>
+                        <input type="hidden" id="u-id">
+                        <div class="space-y-2">
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 block">Nombre Completo</label>
+                                <input type="text" id="u-name" class="w-full p-2 text-xs bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 block">Nombre de Usuario (Login)</label>
+                                <input type="text" id="u-username" class="w-full p-2 text-xs bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 block">Contraseña de Acceso</label>
+                                <input type="text" id="u-password" class="w-full p-2 text-xs bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ej: 123">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-gray-500 block">Rol del Sistema</label>
+                                <select id="u-role" class="w-full p-2 text-xs bg-gray-50 border rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="driver">Repartidor / Chofer</option>
+                                    <option value="admin">Administrador</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex space-x-2 pt-2">
+                            <button onclick="saveUser()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold py-2 rounded-xl shadow-md">Guardar Usuario</button>
+                            <button onclick="closeUserForm()" class="bg-gray-200 text-gray-700 text-xs font-bold px-4 py-2 rounded-xl">Cerrar</button>
+                        </div>
                     </div>
                 </div>
-
-                <div class="flex-1 overflow-y-auto p-2 space-y-2" id="store-list-container">
-                    </div>
             </div>
 
-            <div id="driver-panel" class="hidden absolute bottom-4 left-4 right-4 bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 z-[20] max-w-sm mx-auto flex flex-col max-h-[40%] overflow-hidden">
-                <div class="flex justify-between items-center mb-2 pb-2 border-b">
-                    <h3 class="font-black text-gray-800 text-sm flex items-center">📦 Mi Ruta del Día</h3>
-                    <span class="text-[10px] font-bold px-2 py-0.5 bg-green-100 text-green-800 rounded-full" id="route-progress">0/3 Entregas</span>
+            <div id="driver-route-view" class="hidden absolute bottom-2 left-2 right-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-10 max-w-sm mx-auto flex flex-col max-h-[42%] overflow-hidden">
+                <div class="flex justify-between items-center mb-1.5 pb-1.5 border-b">
+                    <h3 class="font-black text-gray-800 text-xs flex items-center">📦 Mi Ruta Asignada</h3>
+                    <span class="text-[10px] font-black px-2 py-0.5 bg-green-100 text-green-800 rounded-full" id="driver-progress">0/0 Entregas</span>
                 </div>
-                <div class="flex-1 overflow-y-auto space-y-2" id="driver-tasks-container">
+                <div id="driver-tasks-list" class="flex-1 overflow-y-auto space-y-2">
                     </div>
             </div>
 
         </main>
 
-        <footer class="bg-white border-t border-gray-200 grid grid-cols-3 py-2 shadow-inner z-10">
-            <button onclick="switchTab('mapa')" id="tab-mapa" class="flex flex-col items-center justify-center text-blue-600 transition">
-                <span class="text-xl">🗺️</span>
-                <span class="text-[10px] font-bold uppercase tracking-wider mt-0.5">Mapa</span>
+        <footer class="bg-white border-t border-gray-200 grid grid-cols-3 py-1.5 shadow-inner z-20">
+            <button onclick="changeGlobalTab('mapa')" id="nav-mapa" class="flex flex-col items-center justify-center text-blue-600 transition">
+                <span class="text-lg">🗺️</span>
+                <span class="text-[9px] font-black uppercase tracking-wider mt-0.5">Mapa</span>
             </button>
-            <button onclick="switchTab('datos')" id="tab-datos" class="flex flex-col items-center justify-center text-gray-400 transition">
-                <span class="text-xl">📋</span>
-                <span class="text-[10px] font-bold uppercase tracking-wider mt-0.5" id="tab-datos-text">Directorio</span>
+            <button onclick="changeGlobalTab('gestion')" id="nav-gestion" class="flex flex-col items-center justify-center text-gray-400 transition">
+                <span class="text-lg">⚙️</span>
+                <span class="text-[9px] font-black uppercase tracking-wider mt-0.5" id="nav-gestion-label">Gestión</span>
             </button>
-            <button onclick="switchTab('ruta')" id="tab-ruta" class="flex flex-col items-center justify-center text-gray-400 transition relative">
-                <span class="text-xl">🚛</span>
-                <span class="text-[10px] font-bold uppercase tracking-wider mt-0.5">Mi Ruta</span>
-                <span id="badge-ruta" class="absolute top-1 right-8 bg-green-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center shadow-sm hidden">0</span>
+            <button onclick="changeGlobalTab('ruta')" id="nav-ruta" class="flex flex-col items-center justify-center text-gray-400 transition relative">
+                <span class="text-lg">🚛</span>
+                <span class="text-[9px] font-black uppercase tracking-wider mt-0.5">Mi Ruta</span>
+                <span id="badge-route-count" class="absolute top-1 right-8 bg-green-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
             </button>
         </footer>
     </div>
 
     <script>
-        // Datos Iniciales Base (Se usarán si la memoria local está vacía)
-        const defaultFreterias = [
-            { id: 1, name: "Ferrecentro El Constructor", address: "Av. Cristobal de Mendoza #420", zone: "Norte", category: "Mayorista", lat: -17.7682, lng: -63.1815, notes: "Dejar pedido en almacén central. Preguntar por Don Lucas." },
-            { id: 2, name: "Ferretería Molina", address: "Av. San Aurelio esq. 3er Anillo", zone: "Sur", category: "Minorista", lat: -17.8015, lng: -63.1652, notes: "Cobro contra entrega en efectivo obligatoriamente." },
-            { id: 3, name: "Ferretería Hilda", address: "Doble Vía a La Guardia KM 6", zone: "Oeste", category: "Destacado", lat: -17.8210, lng: -63.2214, notes: "Llamar 15 minutos antes al 77012345." }
+        // Datos iniciales de resguardo si la memoria local está totalmente en blanco
+        const defaultStores = [
+            { id: 1, name: "Ferrecentro El Constructor", address: "Av. Cristobal de Mendoza #420", zone: "Norte", category: "Mayorista", lat: -17.7682, lng: -63.1815, notes: "Preguntar por Don Lucas en recepción central." },
+            { id: 2, name: "Ferretería Molina", address: "Av. San Aurelio esq. 3er Anillo", zone: "Sur", category: "Minorista", lat: -17.8015, lng: -63.1652, notes: "Cobro obligatorio en efectivo contra entrega." },
+            { id: 3, name: "Ferretería Hilda", address: "Doble Vía a La Guardia KM 6", zone: "Oeste", category: "Destacado", lat: -17.8210, lng: -63.2214, notes: "Llamar 15 minutos antes al celular registrado." }
         ];
 
-        // Estado Global
-        let ferreterias = [];
+        const defaultUsers = [
+            { id: 1, name: "Xavi Williams", username: "admin", password: "123", role: "admin", avatar: "XW" },
+            { id: 2, name: "Juan Pérez", username: "juan", password: "123", role: "driver", avatar: "JP" }
+        ];
+
+        // Estado de la Aplicación en Tiempo de Ejecución
+        let stores = [];
+        let users = [];
         let currentUser = null;
+        
         let map = null;
         let markersGroup = null;
-        let activeTab = 'mapa';
-        let driverRouteIds = [1, 2, 3]; // Simulación de ruta asignada a Juan
-        let completedRouteIds = [];
+        let tempPlacementMarker = null; // Marcador temporal visual de previsualización
+        
+        let currentGlobalTab = 'mapa';
+        let currentManagementSubTab = 'stores';
+        let completedDeliveries = []; // IDs de las tiendas completadas en la sesión actual
 
-        // Inicializar datos cargando desde LocalStorage
-        function initData() {
-            const savedData = localStorage.getItem('mejin_ferreterias');
-            if (savedData) {
-                ferreterias = JSON.parse(savedData);
-            } else {
-                ferreterias = defaultFreterias;
-                localStorage.setItem('mejin_ferreterias', JSON.stringify(ferreterias));
-            }
+        // 1. CARGA INICIAL DESDE MEMORIA LOCAL
+        function loadSystemStorage() {
+            const savedStores = localStorage.getItem('mejin_stores_v2');
+            const savedUsers = localStorage.getItem('mejin_users_v2');
+
+            stores = savedStores ? JSON.parse(savedStores) : defaultStores;
+            users = savedUsers ? JSON.parse(savedUsers) : defaultUsers;
+
+            if (!savedStores) localStorage.setItem('mejin_stores_v2', JSON.stringify(stores));
+            if (!savedUsers) localStorage.setItem('mejin_users_v2', JSON.stringify(users));
         }
 
-        // Cargar Mapa centrado en Santa Cruz de la Sierra
-        function initMap() {
+        // 2. INICIALIZACIÓN DEL ENTORNO DE MAPAS (Leaflet)
+        function setupMapEngine() {
             if (map) return;
+            // Centrado estratégico en Santa Cruz de la Sierra
             map = L.map('map', { zoomControl: false }).setView([-17.7833, -63.1821], 13);
-            L.tileLayer('https://{s}.tile.boundaryandcode.com/raster/v1/voyager/{z}/{x}/{y}.png' || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
             
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© FerreRutas Mejín'
+            }).addTo(map);
+
             markersGroup = L.layerGroup().addTo(map);
 
-            // ESCUCHADOR DE CLICS EN EL MAPA PARA RELLENAR COORDENADAS AUTOMÁTICAMENTE
+            // ESCUCHADOR CLAVE: Captura los toques en el mapa cuando el formulario de edición está abierto
             map.on('click', function(e) {
-                const isFormOpen = !document.getElementById('store-form-container').classList.contains('hidden');
-                if (isFormOpen && currentUser && currentUser.role === 'admin') {
-                    document.getElementById('form-lat').value = e.latlng.lat.toFixed(6);
-                    document.getElementById('form-lng').value = e.latlng.lng.toFixed(6);
-                    
-                    // Alerta temporal visual en el formulario
-                    document.getElementById('form-title').innerText = "📍 Coordenadas Capturadas";
-                    setTimeout(() => {
-                        document.getElementById('form-title').innerText = document.getElementById('form-id').value ? "Editar Ferretería" : "Nueva Ferretería";
-                    }, 1200);
+                const isFormOpen = !document.getElementById('store-form-card').classList.contains('hidden');
+                if (isFormOpen) {
+                    const lat = e.latlng.lat;
+                    const lng = e.latlng.lng;
+
+                    // Volcar coordenadas al formulario bloqueado
+                    document.getElementById('s-lat').value = lat.toFixed(6);
+                    document.getElementById('s-lng').value = lng.toFixed(6);
+
+                    // Mover o crear el pin visual de previsualización
+                    if (tempPlacementMarker) {
+                        tempPlacementMarker.setLatLng([lat, lng]);
+                    } else {
+                        const tempIcon = L.divIcon({
+                            html: `<div style="background-color: #EF4444; width: 26px; height: 26px; border: 2px solid white; border-radius: 50%; display: flex; items-center; justify-center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); font-size:12px;">📍</div>`,
+                            className: '', iconSize: [26, 26], iconAnchor: [13, 13]
+                        });
+                        tempPlacementMarker = L.marker([lat, lng], { icon: tempIcon }).addTo(map);
+                    }
                 }
             });
         }
 
-        // Dibujar Marcadores dinámicamente en el mapa
-        function updateMapMarkers() {
+        // Redibujar todos los pines en base al rol y cambios
+        function refreshMapLayers() {
             if (!markersGroup) return;
             markersGroup.clearLayers();
 
-            let storesToShow = currentUser && currentUser.role === 'driver' 
-                ? ferreterias.filter(f => driverRouteIds.includes(f.id))
-                : ferreterias;
-
-            storesToShow.forEach(store => {
-                const isCompleted = completedRouteIds.includes(store.id);
-                const markerColor = isCompleted ? '#10B981' : (store.category === 'Mayorista' ? '#2563EB' : '#F59E0B');
+            // Si es chofer, solo ve las de su ruta (para pruebas mostramos todas), si es admin ve todo el universo
+            stores.forEach(store => {
+                const isDone = completedDeliveries.includes(store.id);
+                const color = isDone ? '#10B981' : (store.category === 'Mayorista' ? '#2563EB' : '#F59E0B');
                 
-                // Crear icono personalizado
-                const customIcon = L.divIcon({
-                    html: `<div style="background-color: ${markerColor}; width: 24px; height: 24px; rounded-full; display: flex; items-center; justify-center; border: 2px solid white; border-radius: 50%; shadow-md; text-shadow: none; color: white; font-size: 11px; font-weight: bold;">🛠️</div>`,
-                    className: '',
-                    iconSize: [24, 24],
-                    iconAnchor: [12, 12]
+                const markerIcon = L.divIcon({
+                    html: `<div style="background-color: ${color}; width: 24px; height: 24px; border: 2px solid white; border-radius: 50%; display: flex; align-items: center; justify-center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); color: white; font-size: 11px;">🛠️</div>`,
+                    className: '', iconSize: [24, 24], iconAnchor: [12, 12]
                 });
 
-                const marker = L.marker([store.lat, store.lng], { icon: customIcon });
-                
-                // Ventana emergente con info detallada
-                const popupContent = `
+                const marker = L.marker([store.lat, store.lng], { icon: markerIcon });
+                const popupTemplate = `
                     <div class="p-1 font-sans">
                         <h4 class="font-black text-gray-800 text-sm mb-0.5">${store.name}</h4>
-                        <p class="text-xs text-blue-600 font-bold mb-1">📍 ${store.zone} - ${store.category}</p>
+                        <p class="text-[10px] text-blue-600 font-bold mb-1">📍 ${store.zone} · ${store.category}</p>
                         <p class="text-[11px] text-gray-600 mb-1">🏠 ${store.address}</p>
-                        <p class="text-[10px] bg-gray-50 border p-1 rounded text-gray-500 italic">📝 ${store.notes || 'Sin notas'}</p>
+                        <p class="text-[10px] bg-gray-50 border p-1 rounded text-gray-500 italic">📝 ${store.notes || 'Sin especificaciones'}</p>
                     </div>
                 `;
-                marker.bindPopup(popupContent);
+                marker.bindPopup(popupTemplate);
                 markersGroup.addLayer(marker);
             });
         }
 
-        // Sistema de Login
+        // 3. CONTROL DE SESIÓN (LOGIN / LOGOUT)
         function handleLogin() {
-            const userIn = document.getElementById('username').value.trim().toLowerCase();
-            const passIn = document.getElementById('password').value;
+            const userVal = document.getElementById('username').value.trim().toLowerCase();
+            const passVal = document.getElementById('password').value;
 
-            if (userIn === 'admin' && passIn === '123') {
-                currentUser = { name: "Xavi Williams", role: "admin", avatar: "XW" };
-            } else if (userIn === 'juan' && passIn === '123') {
-                currentUser = { name: "Juan Pérez", role: "driver", avatar: "JP" };
-            } else {
-                alert("Usuario o contraseña incorrectos.");
+            const targetUser = users.find(u => u.username === userVal && u.password === passVal);
+
+            if (!targetUser) {
+                alert("Credenciales no registradas. Intente con admin o juan.");
                 return;
             }
 
-            // Configurar interfaz según rol
+            currentUser = targetUser;
+
+            // Configurar interfaz del Header
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('user-avatar').innerText = currentUser.avatar;
-            document.getElementById('user-role').innerText = currentUser.role === 'admin' ? 'Administrador' : 'Repartidor';
-            document.getElementById('tab-datos-text').innerText = currentUser.role === 'admin' ? 'Directorio' : 'Lista';
+            document.getElementById('user-avatar').innerText = currentUser.avatar || currentUser.name.substring(0,2).toUpperCase();
+            document.getElementById('user-display-name').innerText = currentUser.name;
+            document.getElementById('user-role').innerText = currentUser.role === 'admin' ? 'Administrador General' : 'Personal de Reparto';
+            
+            // Adaptar etiquetas inferiores del footer según rol
+            document.getElementById('nav-gestion-label').innerText = currentUser.role === 'admin' ? 'Gestión' : 'Ferreterías';
 
-            initMap();
-            renderAdminList();
-            renderDriverTasks();
-            updateMapMarkers();
-            switchTab('mapa');
+            setupMapEngine();
+            rebuildPanelsUI();
+            changeGlobalTab('mapa');
         }
 
-        // Cierre de sesión
         function handleLogout() {
             currentUser = null;
             document.getElementById('app-screen').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
+            closeStoreForm();
         }
 
-        // Renderizar el Directorio completo para el Administrador
-        function renderAdminList() {
-            const container = document.getElementById('store-list-container');
-            container.innerHTML = '';
+        // 4. REFRESCO DE INTERFACES DE PANELES (CRUD RENDERERS)
+        function rebuildPanelsUI() {
+            renderStoresManagementList();
+            renderUsersManagementList();
+            renderDriverTasksView();
+            refreshMapLayers();
+        }
 
-            ferreterias.forEach(store => {
+        // Render del catálogo de Tiendas (Vista Admin)
+        function renderStoresManagementList() {
+            const pane = document.getElementById('stores-list-pane');
+            pane.innerHTML = '';
+
+            stores.forEach(store => {
                 const card = document.createElement('div');
-                card.className = "p-3 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow transition flex flex-col space-y-1.5";
+                card.className = "p-3 bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col space-y-1.5";
                 card.innerHTML = `
                     <div class="flex justify-between items-start">
                         <div>
                             <h4 class="font-black text-gray-800 text-xs">${store.name}</h4>
-                            <p class="text-[10px] font-bold text-blue-600">📍 ${store.zone} · ${store.category}</p>
+                            <p class="text-[10px] font-bold text-blue-600">📍 ${store.zone} · <span class="bg-blue-50 px-1 rounded">${store.category}</span></p>
                         </div>
-                        <span class="text-[9px] text-gray-400 bg-gray-50 px-1.5 py-0.5 border rounded-md font-mono">${store.lat.toFixed(3)}, ${store.lng.toFixed(3)}</span>
+                        <span class="text-[9px] text-gray-400 bg-gray-50 border px-1.5 py-0.5 rounded-md font-mono">${store.lat.toFixed(4)}, ${store.lng.toFixed(4)}</span>
                     </div>
                     <p class="text-[11px] text-gray-500">🏠 ${store.address}</p>
-                    <p class="text-[10px] text-gray-400 italic line-clamp-1">📝 ${store.notes || 'Sin anotaciones adicionales'}</p>
-                    <div class="flex justify-end space-x-1 pt-1 border-t border-gray-50">
-                        <button onclick="editStore(${store.id})" class="bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[10px] px-2.5 py-1 rounded-md transition">📝 Editar</button>
-                        <button onclick="deleteStore(${store.id})" class="bg-red-50 text-red-600 hover:bg-red-100 font-bold text-[10px] px-2.5 py-1 rounded-md transition">🗑️ Borrar</button>
+                    <p class="text-[10px] text-gray-400 italic truncate">📝 ${store.notes || 'Sin anotaciones adicionales'}</p>
+                    
+                    ${currentUser && currentUser.role === 'admin' ? `
+                    <div class="flex justify-end space-x-2 pt-1.5 border-t border-gray-50">
+                        <button onclick="openEditStoreForm(${store.id})" class="bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[10px] px-3 py-1 rounded-lg transition">📝 Editar Coordenadas</button>
+                        <button onclick="executeDeleteStore(${store.id})" class="bg-red-50 text-red-600 hover:bg-red-100 font-bold text-[10px] px-3 py-1 rounded-lg transition">🗑️ Eliminar</button>
+                    </div>
+                    ` : ''}
+                `;
+                pane.appendChild(card);
+            });
+        }
+
+        // Render de la lista de Usuarios (Vista Admin)
+        function renderUsersManagementList() {
+            const pane = document.getElementById('users-list-pane');
+            pane.innerHTML = '';
+
+            users.forEach(user => {
+                const card = document.createElement('div');
+                card.className = "p-3 bg-white border border-gray-100 rounded-2xl shadow-sm flex items-center justify-between";
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-indigo-100 text-indigo-700 font-black rounded-full flex items-center justify-center text-xs">${user.avatar || user.name.substring(0,2).toUpperCase()}</div>
+                        <div>
+                            <h4 class="font-black text-gray-800 text-xs">${user.name}</h4>
+                            <p class="text-[10px] text-gray-400 font-mono">User: @${user.username} | Pass: ${user.password}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                        <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800'}">${user.role === 'admin' ? 'Admin' : 'Chofer'}</span>
+                        <button onclick="openEditUserForm(${user.id})" class="text-xs bg-gray-100 hover:bg-gray-200 p-1.5 rounded-lg transition" title="Editar">📝</button>
+                        <button onclick="executeDeleteUser(${user.id})" class="text-xs bg-red-50 text-red-600 hover:bg-red-100 p-1.5 rounded-lg transition" title="Eliminar">🗑️</button>
+                    </div>
+                `;
+                pane.appendChild(card);
+            });
+        }
+
+        // Render de Hoja de Ruta Operativa (Vista Repartidor)
+        function renderDriverTasksView() {
+            const container = document.getElementById('driver-tasks-list');
+            container.innerHTML = '';
+
+            let doneCount = 0;
+
+            stores.forEach(store => {
+                const isDone = completedDeliveries.includes(store.id);
+                if (isDone) doneCount++;
+
+                const card = document.createElement('div');
+                card.className = `p-2.5 border rounded-xl flex items-start space-x-2.5 transition ${isDone ? 'bg-green-50/60 border-green-200' : 'bg-white border-gray-100'}`;
+                card.innerHTML = `
+                    <input type="checkbox" ${isDone ? 'checked' : ''} onclick="toggleTaskStatus(${store.id})" class="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-xs font-black ${isDone ? 'text-gray-400 line-through' : 'text-gray-800'}">${store.name}</h4>
+                            <button onclick="locateStoreOnMap(${store.lat}, ${store.lng})" class="text-[10px] text-blue-600 font-black bg-blue-50 px-2 py-0.5 rounded-md">📍 VER</button>
+                        </div>
+                        <p class="text-[10px] text-gray-500 mt-0.5">${store.address}</p>
+                        ${store.notes ? `<p class="text-[9px] bg-gray-50 p-1 rounded mt-1 border text-gray-500 italic">💡 ${store.notes}</p>` : ''}
                     </div>
                 `;
                 container.appendChild(card);
             });
-        }
 
-        // Renderizar la Hoja de Ruta del Repartidor
-        function renderDriverTasks() {
-            const container = document.getElementById('driver-tasks-container');
-            container.innerHTML = '';
+            // Actualizar contadores globales del footer y panel
+            document.getElementById('driver-progress').innerText = `${doneCount}/${stores.length} Hechos`;
             
-            let tasks = ferreterias.filter(f => driverRouteIds.includes(f.id));
-            let finishedCount = 0;
-
-            tasks.forEach(store => {
-                const isDone = completedRouteIds.includes(store.id);
-                if (isDone) finishedCount++;
-
-                const item = document.createElement('div');
-                item.className = `p-2.5 border rounded-xl shadow-sm flex items-start space-x-2.5 transition ${isDone ? 'bg-green-50/70 border-green-200' : 'bg-white border-gray-100'}`;
-                item.innerHTML = `
-                    <input type="checkbox" ${isDone ? 'checked' : ''} onclick="toggleDeliveryStatus(${store.id})" class="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-blue-500">
-                    <div class="flex-1">
-                        <div class="flex justify-between">
-                            <h4 class="text-xs font-black ${isDone ? 'text-gray-400 line-through' : 'text-gray-800'}">${store.name}</h4>
-                            <button onclick="focusOnMap(${store.lat}, ${store.lng})" class="text-[10px] text-blue-600 font-black">📍 IR</button>
-                        </div>
-                        <p class="text-[10px] text-gray-500">${store.address}</p>
-                        ${store.notes ? `<p class="text-[9px] bg-gray-50 p-1 rounded mt-1 border text-gray-500 italic">${store.notes}</p>` : ''}
-                    </div>
-                `;
-                container.appendChild(item);
-            });
-
-            // Actualizar Contadores Visuales
-            document.getElementById('route-progress').innerText = `${finishedCount}/${tasks.length} Entregas`;
-            const badge = document.getElementById('badge-ruta');
-            const pending = tasks.length - finishedCount;
-            if (pending > 0) {
-                badge.innerText = pending;
+            const pendingCount = stores.length - doneCount;
+            const badge = document.getElementById('badge-route-count');
+            if (pendingCount > 0) {
+                badge.innerText = pendingCount;
                 badge.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
             }
         }
 
-        // Alternar estado de entrega (Completado / Pendiente)
-        function toggleDeliveryStatus(id) {
-            const idx = completedRouteIds.indexOf(id);
-            if (idx > -1) {
-                completedRouteIds.splice(idx, 1);
+        function toggleTaskStatus(id) {
+            const index = completedDeliveries.indexOf(id);
+            if (index > -1) {
+                completedDeliveries.splice(index, 1);
             } else {
-                completedRouteIds.push(id);
+                completedDeliveries.push(id);
             }
-            renderDriverTasks();
-            updateMapMarkers();
+            renderDriverTasksView();
+            refreshMapLayers();
         }
 
-        // Enfocar mapa en una coordenada concreta
-        function focusOnMap(lat, lng) {
+        function locateStoreOnMap(lat, lng) {
             if (!map) return;
             map.flyTo([lat, lng], 16);
-            switchTab('mapa');
+            changeGlobalTab('mapa');
         }
 
-        // FUNCIONES COMPLETAS DEL CRUD DE FERRETERÍAS (LOGICA ADMINISTRADOR)
-        function showStoreForm() {
-            document.getElementById('store-form-container').classList.remove('hidden');
-            document.getElementById('form-title').innerText = "Nueva Ferretería";
-            // Limpiar formulario
-            document.getElementById('form-id').value = '';
-            document.getElementById('form-name').value = '';
-            document.getElementById('form-address').value = '';
-            document.getElementById('form-zone').value = '';
-            document.getElementById('form-category').value = 'Mayorista';
-            document.getElementById('form-lat').value = '';
-            document.getElementById('form-lng').value = '';
-            document.getElementById('form-notes').value = '';
+        // 5. FLUJO INTERACTIVO DE MAPAS AL EDITAR TIENDAS (LA CLAVE MAESTRA)
+        function openNewStoreForm() {
+            // Pasamos automáticamente a la pestaña del mapa para ver los cambios
+            changeGlobalTab('mapa');
+            document.getElementById('store-form-card').classList.remove('hidden');
+            document.getElementById('store-form-title').innerText = "Nueva Ferretería";
+
+            // Limpieza del formulario con coordenadas por defecto en el centro
+            document.getElementById('s-id').value = '';
+            document.getElementById('s-name').value = '';
+            document.getElementById('s-address').value = '';
+            document.getElementById('s-zone').value = '';
+            document.getElementById('s-category').value = 'Mayorista';
+            document.getElementById('s-lat').value = "-17.7833";
+            document.getElementById('s-lng').value = "-63.1821";
+            document.getElementById('s-notes').value = '';
+
+            triggerTempPlacementMarker(-17.7833, -63.1821);
         }
 
-        function hideStoreForm() {
-            document.getElementById('store-form-container').classList.add('hidden');
-        }
-
-        // Rellenar formulario con datos para edición
-        function editStore(id) {
-            const store = ferreterias.find(f => f.id === id);
+        function openEditStoreForm(id) {
+            const store = stores.find(s => s.id === id);
             if (!store) return;
 
-            showStoreForm();
-            document.getElementById('form-title').innerText = "Editar Ferretería";
-            document.getElementById('form-id').value = store.id;
-            document.getElementById('form-name').value = store.name;
-            document.getElementById('form-address').value = store.address;
-            document.getElementById('form-zone').value = store.zone;
-            document.getElementById('form-category').value = store.category;
-            document.getElementById('form-lat').value = store.lat;
-            document.getElementById('form-lng').value = store.lng;
-            document.getElementById('form-notes').value = store.notes || '';
-            
-            // Mover mapa al punto actual por comodidad
+            // ¡VIAJE AUTOMÁTICO AL MAPA PARA ACOMODAR EL PIN CON EL DEDO!
+            changeGlobalTab('mapa');
+            document.getElementById('store-form-card').classList.remove('hidden');
+            document.getElementById('store-form-title').innerText = "Editar Ubicación";
+
+            document.getElementById('s-id').value = store.id;
+            document.getElementById('s-name').value = store.name;
+            document.getElementById('s-address').value = store.address;
+            document.getElementById('s-zone').value = store.zone;
+            document.getElementById('s-category').value = store.category;
+            document.getElementById('s-lat').value = store.lat;
+            document.getElementById('s-lng').value = store.lng;
+            document.getElementById('s-notes').value = store.notes || '';
+
             map.flyTo([store.lat, store.lng], 15);
+            triggerTempPlacementMarker(store.lat, store.lng);
         }
 
-        // Guardar cambios en el array y persistir en memoria local
-        function saveStoreData() {
-            const idVal = document.getElementById('form-id').value;
-            const name = document.getElementById('form-name').value.trim();
-            const address = document.getElementById('form-address').value.trim();
-            const zone = document.getElementById('form-zone').value.trim();
-            const category = document.getElementById('form-category').value;
-            const lat = parseFloat(document.getElementById('form-lat').value);
-            const lng = parseFloat(document.getElementById('form-lng').value);
-            const notes = document.getElementById('form-notes').value.trim();
+        function triggerTempPlacementMarker(lat, lng) {
+            if (tempPlacementMarker) tempPlacementMarker.remove();
+            const tempIcon = L.divIcon({
+                html: `<div style="background-color: #EF4444; width: 26px; height: 26px; border: 2px solid white; border-radius: 50%; display: flex; items-center; justify-center; box-shadow: 0 4px 10px rgba(0,0,0,0.4); font-size:12px;">📍</div>`,
+                className: '', iconSize: [26, 26], iconAnchor: [13, 13]
+            });
+            tempPlacementMarker = L.marker([lat, lng], { icon: tempIcon }).addTo(map);
+        }
+
+        function closeStoreForm() {
+            document.getElementById('store-form-card').classList.add('hidden');
+            if (tempPlacementMarker) {
+                tempPlacementMarker.remove();
+                tempPlacementMarker = null;
+            }
+        }
+
+        function saveStore() {
+            const idVal = document.getElementById('s-id').value;
+            const name = document.getElementById('s-name').value.trim();
+            const address = document.getElementById('s-address').value.trim();
+            const zone = document.getElementById('s-zone').value.trim();
+            const category = document.getElementById('s-category').value;
+            const lat = parseFloat(document.getElementById('s-lat').value);
+            const lng = parseFloat(document.getElementById('s-lng').value);
+            const notes = document.getElementById('s-notes').value.trim();
 
             if (!name || !address || isNaN(lat) || isNaN(lng)) {
-                alert("Por favor completa los campos obligatorios: Nombre, Dirección, Latitud y Longitud.");
+                alert("Por favor rellene el nombre y la dirección comercial.");
                 return;
             }
 
             if (idVal) {
-                // Modo Edición
-                const store = ferreterias.find(f => f.id == idVal);
+                // Modificar registro existente
+                const store = stores.find(s => s.id == idVal);
                 if (store) {
                     store.name = name;
                     store.address = address;
@@ -433,83 +549,164 @@
                     store.notes = notes;
                 }
             } else {
-                // Modo Nuevo Registro
-                const newId = ferreterias.length > 0 ? Math.max(...ferreterias.map(f => f.id)) + 1 : 1;
-                ferreterias.push({ id: newId, name, address, zone, category, lat, lng, notes });
-                // Asignar automáticamente a la ruta para pruebas visuales rápidos
-                if (!driverRouteIds.includes(newId)) driverRouteIds.push(newId);
+                // Generar nueva ferretería
+                const newId = stores.length > 0 ? Math.max(...stores.map(s => s.id)) + 1 : 1;
+                stores.push({ id: newId, name, address, zone, category, lat, lng, notes });
             }
 
-            // Sincronizar en LocalStorage
-            localStorage.setItem('mejin_ferreterias', JSON.stringify(ferreterias));
-
-            hideStoreForm();
-            renderAdminList();
-            renderDriverTasks();
-            updateMapMarkers();
+            localStorage.setItem('mejin_stores_v2', JSON.stringify(stores));
+            closeStoreForm();
+            rebuildPanelsUI();
             
-            // Pequeño aviso de éxito
-            alert("Información guardada de forma segura en la memoria de la aplicación.");
+            // Devolver al administrador al panel de listados con los cambios guardados
+            changeGlobalTab('gestion');
         }
 
-        // Borrar Registro
-        function deleteStore(id) {
-            if (confirm("¿Estás 100% seguro de eliminar esta ferretería del sistema?")) {
-                ferreterias = ferreterias.filter(f => f.id !== id);
-                localStorage.setItem('mejin_ferreterias', JSON.stringify(ferreterias));
-                
-                // Limpiar de rutas
-                driverRouteIds = driverRouteIds.filter(rid => rid !== id);
-                completedRouteIds = completedRouteIds.filter(cid => cid !== id);
-
-                renderAdminList();
-                renderDriverTasks();
-                updateMapMarkers();
+        function executeDeleteStore(id) {
+            if (confirm("¿Eliminar de forma permanente esta ferretería de los registros?")) {
+                stores = stores.filter(s => s.id !== id);
+                localStorage.setItem('mejin_stores_v2', JSON.stringify(stores));
+                rebuildPanelsUI();
             }
         }
 
-        // Control Móvil del panel lateral
-        function toggleAdminPanelMobile() {
-            const panel = document.getElementById('admin-panel');
-            panel.classList.toggle('translate-x-full');
+        // 6. CRUD OPERATIVO DE USUARIOS (LOGICA NUEVA SOLICITADA)
+        function openUserForm() {
+            document.getElementById('user-form-modal').classList.remove('hidden');
+            document.getElementById('user-form-title').innerText = "Nuevo Perfil de Usuario";
+            document.getElementById('u-id').value = '';
+            document.getElementById('u-name').value = '';
+            document.getElementById('u-username').value = '';
+            document.getElementById('u-password').value = '';
+            document.getElementById('u-role').value = 'driver';
         }
 
-        // Control de Pestañas Inferiores (Menú Móvil)
-        function switchTab(tab) {
-            activeTab = tab;
-            
-            // Reiniciar clases de diseño de pestañas
-            const tabs = ['mapa', 'datos', 'ruta'];
-            tabs.forEach(t => {
-                document.getElementById(`tab-${t}`).className = "flex flex-col items-center justify-center text-gray-400 transition";
-            });
-            document.getElementById(`tab-${tab}`).className = "flex flex-col items-center justify-center text-blue-600 transition";
+        function openEditUserForm(id) {
+            const user = users.find(u => u.id === id);
+            if (!user) return;
 
-            // Ocultar paneles inicialmente
-            document.getElementById('admin-panel').classList.add('hidden');
-            document.getElementById('admin-panel').classList.add('translate-x-full');
-            document.getElementById('driver-panel').classList.add('hidden');
+            document.getElementById('user-form-modal').classList.remove('hidden');
+            document.getElementById('user-form-title').innerText = "Modificar Usuario";
+            document.getElementById('u-id').value = user.id;
+            document.getElementById('u-name').value = user.name;
+            document.getElementById('u-username').value = user.username;
+            document.getElementById('u-password').value = user.password;
+            document.getElementById('u-role').value = user.role;
+        }
 
-            // Mostrar el panel adecuado según el rol y la pestaña elegida
-            if (tab === 'datos' && currentUser) {
-                if (currentUser.role === 'admin') {
-                    document.getElementById('admin-panel').classList.remove('hidden');
-                    document.getElementById('admin-panel').classList.remove('translate-x-full');
-                } else {
-                    document.getElementById('driver-panel').classList.remove('hidden');
+        function closeUserForm() {
+            document.getElementById('user-form-modal').classList.add('hidden');
+        }
+
+        function saveUser() {
+            const idVal = document.getElementById('u-id').value;
+            const name = document.getElementById('u-name').value.trim();
+            const username = document.getElementById('u-username').value.trim().toLowerCase();
+            const password = document.getElementById('u-password').value.trim();
+            const role = document.getElementById('u-role').value;
+
+            if (!name || !username || !password) {
+                alert("Complete todos los campos del perfil.");
+                return;
+            }
+
+            if (idVal) {
+                const user = users.find(u => u.id == idVal);
+                if (user) {
+                    user.name = name;
+                    user.username = username;
+                    user.password = password;
+                    user.role = role;
+                    user.avatar = name.substring(0,2).toUpperCase();
                 }
-            } else if (tab === 'ruta' && currentUser) {
-                document.getElementById('driver-panel').classList.remove('hidden');
+            } else {
+                const newId = users.length > 0 ? Math.max(...users.map(u => u.id)) + 1 : 1;
+                users.push({ id: newId, name, username, password, role, avatar: name.substring(0,2).toUpperCase() });
             }
-            
-            // Forzar actualización del tamaño del mapa Leaflet al cambiar de vistas
-            if (map) {
-                setTimeout(() => { map.invalidateSize(); }, 200);
+
+            localStorage.setItem('mejin_users_v2', JSON.stringify(users));
+            closeUserForm();
+            rebuildPanelsUI();
+        }
+
+        function executeDeleteUser(id) {
+            if (id === 1) {
+                alert("Por seguridad no puedes eliminar el perfil administrador principal de Xavi.");
+                return;
+            }
+            if (confirm("¿Seguro que deseas eliminar este usuario de la plataforma? Ya no podrá ingresar.")) {
+                users = users.filter(u => u.id !== id);
+                localStorage.setItem('mejin_users_v2', JSON.stringify(users));
+                rebuildPanelsUI();
             }
         }
 
-        // Arrancar Datos al cargar la página
-        initData();
+        // 7. SISTEMA DE NAVEGACIÓN Y TABS GENERALES
+        function changeGlobalTab(tab) {
+            currentGlobalTab = tab;
+
+            // Limpieza de estilos en los botones inferiores
+            const navs = ['mapa', 'gestion', 'ruta'];
+            navs.forEach(n => {
+                document.getElementById(`nav-${n}`).className = "flex flex-col items-center justify-center text-gray-400 transition";
+            });
+            document.getElementById(`nav-${tab}`).className = "flex flex-col items-center justify-center text-blue-600 transition";
+
+            // Ocultar vistas activas inicialmente
+            document.getElementById('management-view').classList.add('hidden');
+            document.getElementById('driver-route-view').classList.add('hidden');
+
+            // Renderizar la vista elegida en base a permisos
+            if (tab === 'gestion' && currentUser) {
+                document.getElementById('management-view').classList.remove('hidden');
+                // Si entra un chofer a "Ferreterías", lo forzamos a ver solo la subpestaña de Tiendas
+                if (currentUser.role !== 'admin') {
+                    switchManagementSubTab('stores');
+                    document.getElementById('subtab-users').classList.add('hidden');
+                    document.getElementById('btn-add-store').classList.add('hidden');
+                } else {
+                    document.getElementById('subtab-users').classList.remove('hidden');
+                    document.getElementById('btn-add-store').classList.remove('hidden');
+                }
+            } else if (tab === 'ruta') {
+                document.getElementById('driver-route-view').classList.remove('hidden');
+            }
+
+            // Obligar a Leaflet a recalcular dimensiones de pantalla para evitar cortes visuales
+            if (map) {
+                setTimeout(() => { map.invalidateSize(); }, 150);
+            }
+        }
+
+        function switchManagementSubTab(sub) {
+            currentManagementSubTab = sub;
+
+            // Alternar estilos visuales de los botones superiores
+            if (sub === 'stores') {
+                document.getElementById('subtab-stores').className = "px-3 py-1.5 text-xs font-black rounded-lg bg-white text-gray-800 shadow-sm transition";
+                document.getElementById('subtab-users').className = "px-3 py-1.5 text-xs font-black rounded-lg text-gray-500 hover:text-gray-800 transition";
+                
+                document.getElementById('stores-list-pane').classList.remove('hidden');
+                document.getElementById('users-list-pane').classList.add('hidden');
+                
+                if (currentUser && currentUser.role === 'admin') {
+                    document.getElementById('btn-add-store').classList.remove('hidden');
+                }
+                document.getElementById('btn-add-user').classList.add('hidden');
+            } else {
+                document.getElementById('subtab-stores').className = "px-3 py-1.5 text-xs font-black rounded-lg text-gray-500 hover:text-gray-800 transition";
+                document.getElementById('subtab-users').className = "px-3 py-1.5 text-xs font-black rounded-lg bg-white text-gray-800 shadow-sm transition";
+                
+                document.getElementById('stores-list-pane').classList.add('hidden');
+                document.getElementById('users-list-pane').classList.remove('hidden');
+                
+                document.getElementById('btn-add-store').classList.add('hidden');
+                document.getElementById('btn-add-user').classList.remove('hidden');
+            }
+        }
+
+        // Carga inicial del ecosistema al abrir el sitio
+        loadSystemStorage();
     </script>
 </body>
 </html>
