@@ -42,7 +42,7 @@
             </div>
             
             <div class="mt-4 p-3 bg-gray-100 rounded-xl text-[10px] text-gray-600 text-left">
-                <span class="font-bold">Cuentas demo:</span><br>
+                <span class="font-bold">Cuentas (Nuevas credenciales reseteadas):</span><br>
                 Admin: admin / 123<br>
                 Repartidor: juan / 123
             </div>
@@ -84,7 +84,7 @@
                 </div>
 
                 <div id="admin-view-stores" class="flex-1 flex flex-col overflow-hidden">
-                    <div class="px-4 pb-2 border-b flex justify-between items-center">
+                    <div class="px-4 pb-2 border-b flex justify-between items-center mt-2">
                         <h3 class="font-black text-sm text-gray-800" id="stores-panel-title">Directorio Logístico</h3>
                         <button id="btn-add-store" onclick="openStoreForm()" class="text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm brand-bg hover:opacity-90">+ Nueva</button>
                     </div>
@@ -140,7 +140,7 @@
                 </div>
 
                 <div id="admin-view-users" class="hidden flex-1 flex flex-col overflow-hidden">
-                    <div class="px-4 pb-2 border-b flex justify-between items-center">
+                    <div class="px-4 pb-2 border-b flex justify-between items-center mt-2">
                         <h3 class="font-black text-sm text-gray-800">Personal Autorizado</h3>
                         <button onclick="openUserForm()" class="text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm brand-bg hover:opacity-90">+ Nuevo</button>
                     </div>
@@ -164,7 +164,7 @@
                             <div>
                                 <label class="text-[10px] font-bold text-gray-500">Nivel de Acceso</label>
                                 <select id="u-role" class="w-full p-2 text-xs border rounded-lg outline-none focus:ring-1 brand-border">
-                                    <option value="driver">Repartidor (Solo ve rutas)</option>
+                                    <option value="driver">Repartidor (Solo ve rutas y mapas)</option>
                                     <option value="admin">Administrador (Control total)</option>
                                 </select>
                             </div>
@@ -200,7 +200,7 @@
 
             <div id="driver-panel" class="hidden absolute bottom-2 left-2 right-2 bg-white rounded-2xl shadow-2xl border border-gray-100 p-3 z-[20] max-w-sm mx-auto flex flex-col max-h-[45%] overflow-hidden">
                 <div class="flex justify-between items-center mb-2 pb-2 border-b">
-                    <h3 class="font-black text-gray-800 text-sm flex items-center">📦 Mi Ruta a Entregar</h3>
+                    <h3 class="font-black text-gray-800 text-sm flex items-center">📦 Mi Ruta Asignada</h3>
                     <span class="text-[10px] font-bold px-2 py-0.5 bg-green-100 text-green-800 rounded-full" id="route-progress">0 Entregas</span>
                 </div>
                 <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="driver-tasks-list">
@@ -216,7 +216,7 @@
             </button>
             <button onclick="switchMainTab('gestion')" id="nav-gestion" class="flex flex-col items-center justify-center text-gray-400 transition">
                 <span class="text-xl" id="nav-gestion-icon">📋</span>
-                <span class="text-[10px] font-bold uppercase tracking-wider mt-0.5" id="nav-gestion-text">Gestión</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider mt-0.5" id="nav-gestion-text">Directorio</span>
             </button>
             <button onclick="switchMainTab('ruta')" id="nav-ruta" class="flex flex-col items-center justify-center text-gray-400 transition relative">
                 <span class="text-xl">🚛</span>
@@ -237,35 +237,36 @@
         let pickingMarker = null;
         let isPickingLocation = false;
         
-        let myRouteIds = []; // Array donde el chofer guarda las tiendas que seleccionó
-        let completedRoutes = []; // Array de tiendas entregadas
+        let myRouteIds = []; 
+        let completedRoutes = [];
 
-        // Cargar bases de datos
+        // Cambio a V6 para limpiar completamente los permisos pegados en la memoria
         function loadStorage() {
-            const savedBrand = localStorage.getItem('app_brand_v5');
+            const savedBrand = localStorage.getItem('app_brand_v6');
             brandSettings = savedBrand ? JSON.parse(savedBrand) : { color: '#3730a3', name: 'FerreRutas Mejín', slogan: 'Gestión Logística' };
             applyBrandSettingsToDOM();
 
-            const savedUsers = localStorage.getItem('app_users_v5');
+            const savedUsers = localStorage.getItem('app_users_v6');
             users = savedUsers ? JSON.parse(savedUsers) : [
                 { username: 'admin', password: '123', name: 'Administrador', role: 'admin' },
-                { username: 'juan', password: '123', name: 'Juan Pérez', role: 'driver' }
+                { username: 'juan', password: '123', name: 'Juan Repartidor', role: 'driver' }
             ];
 
-            const savedStores = localStorage.getItem('app_stores_v5');
+            const savedStores = localStorage.getItem('app_stores_v6');
             stores = savedStores ? JSON.parse(savedStores) : [
-                { id: 1, name: "Ferrecentro", address: "Av. Cristobal de Mendoza", zone: "Norte", category: "Mayorista", lat: -17.7682, lng: -63.1815, notes: "" }
+                { id: 1, name: "Ferrecentro El Constructor", address: "Av. Cristobal de Mendoza", zone: "Norte", category: "Mayorista", lat: -17.7682, lng: -63.1815, notes: "" },
+                { id: 2, name: "Ferretería Molina", address: "Av. San Aurelio", zone: "Sur", category: "Minorista", lat: -17.8015, lng: -63.1652, notes: "" }
             ];
 
-            const savedRoute = localStorage.getItem('app_driver_route_v5');
+            const savedRoute = localStorage.getItem('app_driver_route_v6');
             myRouteIds = savedRoute ? JSON.parse(savedRoute) : [];
         }
 
         function saveStorage(type) {
-            if(type === 'brand') localStorage.setItem('app_brand_v5', JSON.stringify(brandSettings));
-            if(type === 'users') localStorage.setItem('app_users_v5', JSON.stringify(users));
-            if(type === 'stores') localStorage.setItem('app_stores_v5', JSON.stringify(stores));
-            if(type === 'routes') localStorage.setItem('app_driver_route_v5', JSON.stringify(myRouteIds));
+            if(type === 'brand') localStorage.setItem('app_brand_v6', JSON.stringify(brandSettings));
+            if(type === 'users') localStorage.setItem('app_users_v6', JSON.stringify(users));
+            if(type === 'stores') localStorage.setItem('app_stores_v6', JSON.stringify(stores));
+            if(type === 'routes') localStorage.setItem('app_driver_route_v6', JSON.stringify(myRouteIds));
         }
 
         function applyBrandSettingsToDOM() {
@@ -327,14 +328,19 @@
             document.getElementById('user-avatar').innerText = currentUser.name.substring(0,2).toUpperCase();
             document.getElementById('user-role-display').innerText = currentUser.role === 'admin' ? 'Administrador' : 'Repartidor';
 
+            // RESTRICCIÓN DE PANTALLA: Ocultar controles de administrador si es repartidor
             if (currentUser.role === 'admin') {
                 document.getElementById('nav-gestion-text').innerText = "Gestión";
                 document.getElementById('nav-gestion-icon').innerText = "⚙️";
                 document.getElementById('stores-panel-title').innerText = "Directorio Logístico";
+                document.getElementById('admin-tabs-container').classList.remove('hidden'); // Muestra las pestañas de admin
+                document.getElementById('btn-add-store').classList.remove('hidden'); // Muestra el botón de agregar tienda
             } else {
                 document.getElementById('nav-gestion-text').innerText = "Directorio";
                 document.getElementById('nav-gestion-icon').innerText = "📋";
                 document.getElementById('stores-panel-title').innerText = "Ferreterías Disponibles";
+                document.getElementById('admin-tabs-container').classList.add('hidden'); // Oculta las pestañas de admin por completo
+                document.getElementById('btn-add-store').classList.add('hidden'); // Oculta el botón de agregar tienda
             }
 
             initMap();
@@ -347,6 +353,7 @@
             document.getElementById('app-screen').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('login-password').value = '';
+            document.getElementById('store-form').classList.add('hidden');
         }
 
         function refreshInterfaces() {
@@ -363,15 +370,14 @@
             stores.forEach(s => {
                 let actionButtons = '';
                 
-                // Si es ADMIN, ve Editar y Borrar
+                // CONDICIONAL ESTRICTO: Solo el Admin tiene HTML para editar/borrar
                 if (currentUser.role === 'admin') {
                     actionButtons = `
                         <button onclick="editStore(${s.id})" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded">Editar</button>
                         <button onclick="deleteStore(${s.id})" class="text-[10px] font-bold text-red-600 bg-red-50 px-3 py-1 rounded">Borrar</button>
                     `;
-                } 
-                // Si es REPARTIDOR, ve los botones de Añadir o Quitar de su Ruta
-                else {
+                } else {
+                    // El Repartidor solo ve botones para agregar o quitar de su ruta
                     const inRoute = myRouteIds.includes(s.id);
                     if (inRoute) {
                         actionButtons = `<button onclick="removeFromRoute(${s.id})" class="text-[10px] font-bold text-gray-500 bg-gray-100 hover:text-red-500 px-3 py-1.5 rounded w-full">Quitar de mi ruta</button>`;
@@ -394,7 +400,6 @@
             });
         }
 
-        // Funciones del Chofer para armar su ruta
         function addToRoute(id) {
             if(!myRouteIds.includes(id)) myRouteIds.push(id);
             saveStorage('routes');
@@ -406,13 +411,12 @@
             refreshInterfaces();
         }
 
-        // ====== LÓGICA DE MI RUTA Y GPS ======
+        // ====== LÓGICA DE MI RUTA Y GPS (REPARTIDOR) ======
         function renderDriverTasks() {
             const list = document.getElementById('driver-tasks-list');
             list.innerHTML = '';
             let doneCount = 0;
             
-            // El chofer solo ve en su pestaña las tiendas que él mismo seleccionó
             const myStoresToVisit = stores.filter(s => myRouteIds.includes(s.id));
 
             myStoresToVisit.forEach(s => {
@@ -458,11 +462,10 @@
         }
 
         function openExternalGPS(lat, lng) {
-            // Esto abrirá la app de Google Maps en el celular directamente hacia la tienda
             window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
         }
 
-        // Funciones CRUD Admin (Tiendas, Mapa, Usuarios) se mantienen igual...
+        // ====== FUNCIONES DE ADMIN ======
         function openStoreForm() {
             document.getElementById('store-form').classList.remove('hidden');
             document.getElementById('store-form-title').innerText = "Nueva Tienda";
@@ -553,6 +556,7 @@
         function closeUserForm() { document.getElementById('user-form').classList.add('hidden'); }
         function saveBrandSettings() { brandSettings.name = document.getElementById('b-name').value.trim(); brandSettings.slogan = document.getElementById('b-slogan').value.trim(); brandSettings.color = document.getElementById('b-color').value; saveStorage('brand'); applyBrandSettingsToDOM(); alert("Ajustes guardados."); }
 
+        // ====== TABS SUPERIORES E INFERIORES ======
         function switchMainTab(tab) {
             ['mapa', 'gestion', 'ruta'].forEach(t => document.getElementById(`nav-${t}`).className = "flex flex-col items-center justify-center text-gray-400 transition");
             document.getElementById(`nav-${tab}`).className = "flex flex-col items-center justify-center brand-text transition";
@@ -562,14 +566,13 @@
 
             if (tab === 'gestion' && currentUser) {
                 document.getElementById('admin-panel').classList.remove('hidden');
+                // IMPORTANTE: Bloqueo explícito al entrar a la pestaña Gestión
                 if (currentUser.role === 'admin') {
+                    document.getElementById('admin-tabs-container').classList.remove('hidden');
                     document.getElementById('btn-add-store').classList.remove('hidden');
-                    document.getElementById('tab-admin-users').classList.remove('hidden');
-                    document.getElementById('tab-admin-brand').classList.remove('hidden');
                 } else {
+                    document.getElementById('admin-tabs-container').classList.add('hidden');
                     document.getElementById('btn-add-store').classList.add('hidden');
-                    document.getElementById('tab-admin-users').classList.add('hidden');
-                    document.getElementById('tab-admin-brand').classList.add('hidden');
                 }
                 switchAdminTab('stores');
             } else if (tab === 'ruta') document.getElementById('driver-panel').classList.remove('hidden');
