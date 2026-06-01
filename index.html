@@ -42,7 +42,7 @@
             </div>
             
             <div class="mt-4 p-3 bg-gray-100 rounded-xl text-[10px] text-gray-600 text-left">
-                <span class="font-bold">Cuentas (Nuevas credenciales reseteadas):</span><br>
+                <span class="font-bold">Cuentas:</span><br>
                 Admin: admin / 123<br>
                 Repartidor: juan / 123
             </div>
@@ -70,9 +70,12 @@
                 <div id="map" class="w-full h-full"></div>
             </div>
 
-            <div id="map-picker-banner" class="hidden absolute top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-96 text-white p-3 rounded-xl shadow-2xl z-[100] flex justify-between items-center animate-bounce brand-bg">
-                <span class="text-xs font-bold">📍 Toca cualquier calle del mapa</span>
-                <button onclick="cancelMapPicker()" class="bg-black/30 hover:bg-black/40 px-3 py-1.5 rounded-lg text-xs font-bold transition">Cancelar</button>
+            <div id="map-picker-banner" class="hidden absolute top-4 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-96 text-white p-3 rounded-xl shadow-2xl z-[100] flex justify-between items-center brand-bg">
+                <span class="text-[11px] font-bold leading-tight">📍 Arrastra el pin rojo<br>hasta la ubicación exacta</span>
+                <div class="flex space-x-1.5">
+                    <button onclick="confirmMapPicker()" class="bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-md">Listo</button>
+                    <button onclick="cancelMapPicker()" class="bg-black/30 hover:bg-black/40 px-3 py-1.5 rounded-lg text-xs font-bold transition">Cancelar</button>
+                </div>
             </div>
 
             <div id="admin-panel" class="hidden w-full md:w-96 bg-white border-r md:border-l border-gray-200 flex flex-col absolute md:relative inset-0 z-[20] transition-transform transform overflow-hidden shadow-2xl">
@@ -89,12 +92,19 @@
                         <button id="btn-add-store" onclick="openStoreForm()" class="text-white text-[10px] font-bold px-3 py-1.5 rounded-lg shadow-sm brand-bg hover:opacity-90">+ Nueva</button>
                     </div>
                     
-                    <div id="store-form" class="hidden p-4 bg-gray-50 border-b overflow-y-auto max-h-[70%]">
+                    <div id="store-form" class="hidden p-4 bg-gray-50 border-b overflow-y-auto max-h-[75%]">
                         <h4 class="text-xs font-black uppercase tracking-wider mb-2 brand-text" id="store-form-title">Configurar Tienda</h4>
                         <input type="hidden" id="s-id">
                         <div class="space-y-2">
+                            
+                            <div class="bg-white p-2 rounded-lg border border-dashed border-gray-300">
+                                <label class="text-[10px] font-bold text-gray-500 block mb-1">📸 Fotografía de Fachada (Opcional)</label>
+                                <input type="file" id="s-photo" accept="image/*" class="w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-[10px] file:font-bold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200" onchange="previewPhoto(event)">
+                                <img id="s-photo-preview" class="mt-2 hidden h-24 w-full object-cover rounded shadow-sm border border-gray-200" src="" />
+                            </div>
+
                             <div>
-                                <label class="text-[10px] font-bold text-gray-500">Nombre</label>
+                                <label class="text-[10px] font-bold text-gray-500">Nombre de la Ferretería</label>
                                 <input type="text" id="s-name" class="w-full p-2 text-xs border rounded-lg outline-none focus:ring-1 brand-border">
                             </div>
                             <div>
@@ -130,9 +140,9 @@
                                 <input type="text" id="s-notes" class="w-full p-2 text-xs border rounded-lg outline-none focus:ring-1 brand-border">
                             </div>
                         </div>
-                        <div class="flex space-x-2 mt-3">
-                            <button onclick="saveStore()" class="flex-1 bg-green-600 text-white text-xs font-bold py-2 rounded-lg">Guardar</button>
-                            <button onclick="closeStoreForm()" class="bg-gray-300 text-gray-700 text-xs font-bold px-3 rounded-lg">Cerrar</button>
+                        <div class="flex space-x-2 mt-4">
+                            <button onclick="saveStore()" class="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold py-2 rounded-lg shadow-md transition">Guardar Tienda</button>
+                            <button onclick="closeStoreForm()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 text-xs font-bold px-4 rounded-lg transition">Cancelar</button>
                         </div>
                     </div>
 
@@ -164,7 +174,7 @@
                             <div>
                                 <label class="text-[10px] font-bold text-gray-500">Nivel de Acceso</label>
                                 <select id="u-role" class="w-full p-2 text-xs border rounded-lg outline-none focus:ring-1 brand-border">
-                                    <option value="driver">Repartidor (Solo ve rutas y mapas)</option>
+                                    <option value="driver">Repartidor (Solo ve rutas)</option>
                                     <option value="admin">Administrador (Control total)</option>
                                 </select>
                             </div>
@@ -235,38 +245,38 @@
         let map = null;
         let markersGroup = null;
         let pickingMarker = null;
-        let isPickingLocation = false;
         
         let myRouteIds = []; 
         let completedRoutes = [];
+        let currentPhotoBase64 = ""; // Almacena la foto que se está subiendo
 
-        // Cambio a V6 para limpiar completamente los permisos pegados en la memoria
+        // Cambiamos a v7 por la nueva estructura con fotos
         function loadStorage() {
-            const savedBrand = localStorage.getItem('app_brand_v6');
+            const savedBrand = localStorage.getItem('app_brand_v7');
             brandSettings = savedBrand ? JSON.parse(savedBrand) : { color: '#3730a3', name: 'FerreRutas Mejín', slogan: 'Gestión Logística' };
             applyBrandSettingsToDOM();
 
-            const savedUsers = localStorage.getItem('app_users_v6');
+            const savedUsers = localStorage.getItem('app_users_v7');
             users = savedUsers ? JSON.parse(savedUsers) : [
                 { username: 'admin', password: '123', name: 'Administrador', role: 'admin' },
                 { username: 'juan', password: '123', name: 'Juan Repartidor', role: 'driver' }
             ];
 
-            const savedStores = localStorage.getItem('app_stores_v6');
+            const savedStores = localStorage.getItem('app_stores_v7');
             stores = savedStores ? JSON.parse(savedStores) : [
-                { id: 1, name: "Ferrecentro El Constructor", address: "Av. Cristobal de Mendoza", zone: "Norte", category: "Mayorista", lat: -17.7682, lng: -63.1815, notes: "" },
-                { id: 2, name: "Ferretería Molina", address: "Av. San Aurelio", zone: "Sur", category: "Minorista", lat: -17.8015, lng: -63.1652, notes: "" }
+                { id: 1, name: "Ferrecentro El Constructor", address: "Av. Cristobal de Mendoza", zone: "Norte", category: "Mayorista", lat: -17.7682, lng: -63.1815, notes: "", photo: "" },
+                { id: 2, name: "Ferretería Molina", address: "Av. San Aurelio", zone: "Sur", category: "Minorista", lat: -17.8015, lng: -63.1652, notes: "", photo: "" }
             ];
 
-            const savedRoute = localStorage.getItem('app_driver_route_v6');
+            const savedRoute = localStorage.getItem('app_driver_route_v7');
             myRouteIds = savedRoute ? JSON.parse(savedRoute) : [];
         }
 
         function saveStorage(type) {
-            if(type === 'brand') localStorage.setItem('app_brand_v6', JSON.stringify(brandSettings));
-            if(type === 'users') localStorage.setItem('app_users_v6', JSON.stringify(users));
-            if(type === 'stores') localStorage.setItem('app_stores_v6', JSON.stringify(stores));
-            if(type === 'routes') localStorage.setItem('app_driver_route_v6', JSON.stringify(myRouteIds));
+            if(type === 'brand') localStorage.setItem('app_brand_v7', JSON.stringify(brandSettings));
+            if(type === 'users') localStorage.setItem('app_users_v7', JSON.stringify(users));
+            if(type === 'stores') localStorage.setItem('app_stores_v7', JSON.stringify(stores));
+            if(type === 'routes') localStorage.setItem('app_driver_route_v7', JSON.stringify(myRouteIds));
         }
 
         function applyBrandSettingsToDOM() {
@@ -285,18 +295,6 @@
             map = L.map('map', { zoomControl: false }).setView([-17.7833, -63.1821], 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
             markersGroup = L.layerGroup().addTo(map);
-
-            map.on('click', function(e) {
-                if (isPickingLocation) {
-                    document.getElementById('s-lat').value = e.latlng.lat.toFixed(6);
-                    document.getElementById('s-lng').value = e.latlng.lng.toFixed(6);
-                    if (pickingMarker) pickingMarker.remove();
-                    pickingMarker = L.marker([e.latlng.lat, e.latlng.lng], {
-                        icon: L.divIcon({ html: `<div style="font-size:24px;">📍</div>`, className: ''})
-                    }).addTo(map);
-                    cancelMapPicker();
-                }
-            });
         }
 
         function updateMapPins() {
@@ -328,19 +326,19 @@
             document.getElementById('user-avatar').innerText = currentUser.name.substring(0,2).toUpperCase();
             document.getElementById('user-role-display').innerText = currentUser.role === 'admin' ? 'Administrador' : 'Repartidor';
 
-            // RESTRICCIÓN DE PANTALLA: Ocultar controles de administrador si es repartidor
+            // RESTRICCIÓN VISUAL
             if (currentUser.role === 'admin') {
                 document.getElementById('nav-gestion-text').innerText = "Gestión";
                 document.getElementById('nav-gestion-icon').innerText = "⚙️";
                 document.getElementById('stores-panel-title').innerText = "Directorio Logístico";
-                document.getElementById('admin-tabs-container').classList.remove('hidden'); // Muestra las pestañas de admin
-                document.getElementById('btn-add-store').classList.remove('hidden'); // Muestra el botón de agregar tienda
+                document.getElementById('admin-tabs-container').classList.remove('hidden');
+                document.getElementById('btn-add-store').classList.remove('hidden');
             } else {
                 document.getElementById('nav-gestion-text').innerText = "Directorio";
                 document.getElementById('nav-gestion-icon').innerText = "📋";
                 document.getElementById('stores-panel-title').innerText = "Ferreterías Disponibles";
-                document.getElementById('admin-tabs-container').classList.add('hidden'); // Oculta las pestañas de admin por completo
-                document.getElementById('btn-add-store').classList.add('hidden'); // Oculta el botón de agregar tienda
+                document.getElementById('admin-tabs-container').classList.add('hidden');
+                document.getElementById('btn-add-store').classList.add('hidden');
             }
 
             initMap();
@@ -363,6 +361,21 @@
             updateMapPins();
         }
 
+        // ====== CONVERTIDOR DE FOTOS A BASE64 ======
+        function previewPhoto(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentPhotoBase64 = e.target.result;
+                    const preview = document.getElementById('s-photo-preview');
+                    preview.src = currentPhotoBase64;
+                    preview.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
         // ====== LÓGICA DE TIENDAS / DIRECTORIO ======
         function renderStoresList() {
             const list = document.getElementById('admin-stores-list');
@@ -370,30 +383,38 @@
             stores.forEach(s => {
                 let actionButtons = '';
                 
-                // CONDICIONAL ESTRICTO: Solo el Admin tiene HTML para editar/borrar
                 if (currentUser.role === 'admin') {
                     actionButtons = `
-                        <button onclick="editStore(${s.id})" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded">Editar</button>
-                        <button onclick="deleteStore(${s.id})" class="text-[10px] font-bold text-red-600 bg-red-50 px-3 py-1 rounded">Borrar</button>
+                        <button onclick="editStore(${s.id})" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-4 py-1.5 rounded">📝 Editar</button>
+                        <button onclick="deleteStore(${s.id})" class="text-[10px] font-bold text-red-600 bg-red-50 px-4 py-1.5 rounded">🗑️ Borrar</button>
                     `;
                 } else {
-                    // El Repartidor solo ve botones para agregar o quitar de su ruta
                     const inRoute = myRouteIds.includes(s.id);
                     if (inRoute) {
-                        actionButtons = `<button onclick="removeFromRoute(${s.id})" class="text-[10px] font-bold text-gray-500 bg-gray-100 hover:text-red-500 px-3 py-1.5 rounded w-full">Quitar de mi ruta</button>`;
+                        actionButtons = `<button onclick="removeFromRoute(${s.id})" class="text-[10px] font-bold text-gray-500 bg-gray-100 hover:text-red-500 px-3 py-2 rounded w-full border">Quitar de mi ruta</button>`;
                     } else {
-                        actionButtons = `<button onclick="addToRoute(${s.id})" class="text-[10px] font-bold text-white brand-bg px-3 py-1.5 rounded w-full shadow-sm">+ Añadir a Mi Ruta</button>`;
+                        actionButtons = `<button onclick="addToRoute(${s.id})" class="text-[10px] font-bold text-white brand-bg px-3 py-2 rounded w-full shadow-sm">+ Añadir a Mi Ruta</button>`;
                     }
                 }
 
+                // Generar HTML de la foto (Si tiene foto se muestra miniatura, si no un icono)
+                const photoHtml = s.photo 
+                    ? `<img src="${s.photo}" class="w-14 h-14 object-cover rounded-lg border border-gray-200 shrink-0">` 
+                    : `<div class="w-14 h-14 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center text-xl shrink-0">🏪</div>`;
+
                 list.innerHTML += `
                 <div class="p-3 bg-white border rounded-xl shadow-sm">
-                    <div class="flex justify-between items-start mb-1">
-                        <h4 class="font-black text-xs">${s.name}</h4>
-                        <span class="text-[9px] brand-text bg-blue-50 px-1 rounded border brand-border">${s.category}</span>
+                    <div class="flex items-start space-x-3 mb-2">
+                        ${photoHtml}
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start mb-0.5">
+                                <h4 class="font-black text-xs leading-tight pr-1">${s.name}</h4>
+                                <span class="text-[9px] brand-text bg-blue-50 px-1.5 py-0.5 rounded border brand-border whitespace-nowrap">${s.category}</span>
+                            </div>
+                            <p class="text-[10px] text-gray-500 leading-tight">🏠 ${s.address}</p>
+                        </div>
                     </div>
-                    <p class="text-[10px] text-gray-500 mb-2">🏠 ${s.address}</p>
-                    <div class="flex justify-between space-x-2 border-t pt-2 mt-1">
+                    <div class="flex justify-between space-x-2 border-t pt-2 border-gray-100">
                         ${actionButtons}
                     </div>
                 </div>`;
@@ -422,18 +443,24 @@
             myStoresToVisit.forEach(s => {
                 const isDone = completedRoutes.includes(s.id);
                 if (isDone) doneCount++;
+
+                const photoHtml = s.photo 
+                    ? `<img src="${s.photo}" class="w-10 h-10 object-cover rounded-md border border-gray-200 shrink-0 opacity-${isDone ? '50' : '100'}">` 
+                    : `<div class="w-10 h-10 bg-gray-100 rounded-md border border-gray-200 flex items-center justify-center text-sm shrink-0 opacity-${isDone ? '50' : '100'}">🏪</div>`;
+
                 list.innerHTML += `
-                <div class="p-2.5 border rounded-xl flex flex-col space-y-2 ${isDone ? 'bg-green-50' : 'bg-white'}">
-                    <div class="flex items-start space-x-2">
-                        <input type="checkbox" ${isDone ? 'checked' : ''} onclick="toggleRouteStatus(${s.id})" class="mt-1 w-4 h-4">
+                <div class="p-2.5 border rounded-xl flex flex-col space-y-2 ${isDone ? 'bg-green-50/50' : 'bg-white'}">
+                    <div class="flex items-center space-x-2">
+                        <input type="checkbox" ${isDone ? 'checked' : ''} onclick="toggleRouteStatus(${s.id})" class="w-5 h-5 accent-green-600 rounded">
+                        ${photoHtml}
                         <div class="flex-1">
-                            <h4 class="text-xs font-black ${isDone ? 'line-through text-gray-400' : ''}">${s.name}</h4>
-                            <p class="text-[10px] text-gray-500">${s.address}</p>
+                            <h4 class="text-xs font-black ${isDone ? 'line-through text-gray-400' : 'text-gray-800'}">${s.name}</h4>
+                            <p class="text-[10px] text-gray-500 line-clamp-1">${s.address}</p>
                         </div>
                     </div>
-                    <div class="flex justify-between space-x-2 border-t pt-2">
-                        <button onclick="flyToMap(${s.lat}, ${s.lng})" class="flex-1 text-[10px] font-bold text-gray-600 bg-gray-100 py-1.5 rounded">📍 Ver en Mapa</button>
-                        <button onclick="openExternalGPS(${s.lat}, ${s.lng})" class="flex-1 text-[10px] font-bold text-white bg-green-600 py-1.5 rounded shadow-md">🧭 Navegar (GPS)</button>
+                    <div class="flex justify-between space-x-2 border-t pt-2 border-gray-100">
+                        <button onclick="flyToMap(${s.lat}, ${s.lng})" class="flex-1 text-[10px] font-bold text-gray-600 bg-gray-100 py-2 rounded">📍 Ver Mapa</button>
+                        <button onclick="openExternalGPS(${s.lat}, ${s.lng})" class="flex-1 text-[10px] font-bold text-white bg-green-600 py-2 rounded shadow-md">🧭 Iniciar GPS</button>
                     </div>
                 </div>`;
             });
@@ -462,17 +489,26 @@
         }
 
         function openExternalGPS(lat, lng) {
-            window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+            window.open(`https://maps.google.com/?q=${lat},${lng}`, '_blank');
         }
 
-        // ====== FUNCIONES DE ADMIN ======
+        // ====== FUNCIONES DE ADMIN (FORMULARIO Y MAPA ARRASTRABLE) ======
         function openStoreForm() {
             document.getElementById('store-form').classList.remove('hidden');
             document.getElementById('store-form-title').innerText = "Nueva Tienda";
-            document.getElementById('s-id').value = ''; document.getElementById('s-name').value = '';
-            document.getElementById('s-address').value = ''; document.getElementById('s-lat').value = '-17.7833';
-            document.getElementById('s-lng').value = '-63.1821'; document.getElementById('s-zone').value = '';
+            document.getElementById('s-id').value = ''; 
+            document.getElementById('s-name').value = '';
+            document.getElementById('s-address').value = ''; 
+            document.getElementById('s-lat').value = '-17.7833';
+            document.getElementById('s-lng').value = '-63.1821'; 
+            document.getElementById('s-zone').value = '';
             document.getElementById('s-notes').value = '';
+            
+            // Limpiar foto
+            currentPhotoBase64 = "";
+            document.getElementById('s-photo').value = "";
+            document.getElementById('s-photo-preview').classList.add('hidden');
+            document.getElementById('s-photo-preview').src = "";
         }
 
         function editStore(id) {
@@ -480,24 +516,69 @@
             if (!s) return;
             openStoreForm();
             document.getElementById('store-form-title').innerText = "Editar Tienda";
-            document.getElementById('s-id').value = s.id; document.getElementById('s-name').value = s.name;
-            document.getElementById('s-address').value = s.address; document.getElementById('s-lat').value = s.lat;
-            document.getElementById('s-lng').value = s.lng; document.getElementById('s-zone').value = s.zone;
-            document.getElementById('s-category').value = s.category; document.getElementById('s-notes').value = s.notes || '';
+            document.getElementById('s-id').value = s.id; 
+            document.getElementById('s-name').value = s.name;
+            document.getElementById('s-address').value = s.address; 
+            document.getElementById('s-lat').value = s.lat;
+            document.getElementById('s-lng').value = s.lng; 
+            document.getElementById('s-zone').value = s.zone;
+            document.getElementById('s-category').value = s.category; 
+            document.getElementById('s-notes').value = s.notes || '';
+            
+            // Cargar foto si existe
+            currentPhotoBase64 = s.photo || "";
+            if (currentPhotoBase64) {
+                document.getElementById('s-photo-preview').src = currentPhotoBase64;
+                document.getElementById('s-photo-preview').classList.remove('hidden');
+            }
+
             map.flyTo([s.lat, s.lng], 15);
         }
 
         function activateMapPicker() {
-            isPickingLocation = true;
             document.getElementById('admin-panel').classList.add('hidden');
             document.getElementById('map-picker-banner').classList.remove('hidden');
+
+            let currentLat = parseFloat(document.getElementById('s-lat').value) || -17.7833;
+            let currentLng = parseFloat(document.getElementById('s-lng').value) || -63.1821;
+
+            if (pickingMarker) map.removeLayer(pickingMarker);
+
+            // Crear Pin Arrastrable
+            pickingMarker = L.marker([currentLat, currentLng], {
+                draggable: true,
+                icon: L.divIcon({ html: `<div style="font-size:35px; text-shadow:0px 4px 6px rgba(0,0,0,0.4);">📍</div>`, className: ''})
+            }).addTo(map);
+
+            map.flyTo([currentLat, currentLng], 17);
+
+            // Al soltar el pin, actualizar variables internas (sin cerrar aún)
+            pickingMarker.on('dragend', function(e) {
+                const pos = e.target.getLatLng();
+                document.getElementById('s-lat').value = pos.lat.toFixed(6);
+                document.getElementById('s-lng').value = pos.lng.toFixed(6);
+            });
+        }
+
+        function confirmMapPicker() {
+            if (pickingMarker) {
+                const pos = pickingMarker.getLatLng();
+                document.getElementById('s-lat').value = pos.lat.toFixed(6);
+                document.getElementById('s-lng').value = pos.lng.toFixed(6);
+                map.removeLayer(pickingMarker);
+                pickingMarker = null;
+            }
+            document.getElementById('map-picker-banner').classList.add('hidden');
+            document.getElementById('admin-panel').classList.remove('hidden');
         }
 
         function cancelMapPicker() {
-            isPickingLocation = false;
+            if (pickingMarker) {
+                map.removeLayer(pickingMarker);
+                pickingMarker = null;
+            }
             document.getElementById('map-picker-banner').classList.add('hidden');
             document.getElementById('admin-panel').classList.remove('hidden');
-            if (pickingMarker) { pickingMarker.remove(); pickingMarker = null; }
         }
 
         function saveStore() {
@@ -505,26 +586,50 @@
             const name = document.getElementById('s-name').value.trim();
             const lat = parseFloat(document.getElementById('s-lat').value);
             const lng = parseFloat(document.getElementById('s-lng').value);
-            if (!name || isNaN(lat)) return alert("Faltan datos");
+            if (!name || isNaN(lat)) return alert("El nombre y la ubicación son obligatorios.");
 
             if (id) {
                 const s = stores.find(x => x.id == id);
-                s.name = name; s.lat = lat; s.lng = lng; s.address = document.getElementById('s-address').value;
-                s.zone = document.getElementById('s-zone').value; s.category = document.getElementById('s-category').value;
+                s.name = name; 
+                s.lat = lat; 
+                s.lng = lng; 
+                s.address = document.getElementById('s-address').value;
+                s.zone = document.getElementById('s-zone').value; 
+                s.category = document.getElementById('s-category').value;
                 s.notes = document.getElementById('s-notes').value;
+                s.photo = currentPhotoBase64; // Guardar la foto
             } else {
-                stores.push({ id: Date.now(), name, lat, lng, address: document.getElementById('s-address').value,
-                    zone: document.getElementById('s-zone').value, category: document.getElementById('s-category').value, notes: document.getElementById('s-notes').value });
+                stores.push({ 
+                    id: Date.now(), 
+                    name, lat, lng, 
+                    address: document.getElementById('s-address').value,
+                    zone: document.getElementById('s-zone').value, 
+                    category: document.getElementById('s-category').value, 
+                    notes: document.getElementById('s-notes').value,
+                    photo: currentPhotoBase64 // Guardar la foto
+                });
             }
-            saveStorage('stores'); closeStoreForm(); refreshInterfaces();
+            saveStorage('stores'); 
+            closeStoreForm(); 
+            refreshInterfaces();
         }
 
         function deleteStore(id) {
-            if(confirm("¿Eliminar tienda?")) { stores = stores.filter(s => s.id !== id); saveStorage('stores'); refreshInterfaces(); }
+            if(confirm("¿Estás seguro de eliminar esta tienda del registro?")) { 
+                stores = stores.filter(s => s.id !== id); 
+                // Limpiarla de las rutas de los choferes
+                myRouteIds = myRouteIds.filter(rid => rid !== id);
+                completedRoutes = completedRoutes.filter(rid => rid !== id);
+                
+                saveStorage('stores'); 
+                saveStorage('routes');
+                refreshInterfaces(); 
+            }
         }
 
         function closeStoreForm() { document.getElementById('store-form').classList.add('hidden'); }
 
+        // FUNCIONES DE USUARIO Y DISEÑO (Sin cambios)
         function renderAdminUsers() {
             const list = document.getElementById('admin-users-list');
             list.innerHTML = '';
@@ -535,8 +640,8 @@
                     <div class="flex flex-col items-end space-y-2">
                         <span class="text-[9px] font-black px-1.5 py-0.5 rounded ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-orange-100 text-orange-800'}">${u.role === 'admin' ? 'Admin' : 'Chofer'}</span>
                         <div class="flex space-x-1">
-                            <button onclick="editUser('${u.username}')" class="text-xs bg-gray-100 p-1 rounded">📝</button>
-                            ${u.username !== 'admin' ? `<button onclick="deleteUser('${u.username}')" class="text-xs bg-red-50 text-red-600 p-1 rounded">🗑️</button>` : ''}
+                            <button onclick="editUser('${u.username}')" class="text-xs bg-gray-100 p-1.5 rounded hover:bg-gray-200">📝</button>
+                            ${u.username !== 'admin' ? `<button onclick="deleteUser('${u.username}')" class="text-xs bg-red-50 text-red-600 p-1.5 rounded hover:bg-red-100">🗑️</button>` : ''}
                         </div>
                     </div>
                 </div>`;
@@ -566,14 +671,6 @@
 
             if (tab === 'gestion' && currentUser) {
                 document.getElementById('admin-panel').classList.remove('hidden');
-                // IMPORTANTE: Bloqueo explícito al entrar a la pestaña Gestión
-                if (currentUser.role === 'admin') {
-                    document.getElementById('admin-tabs-container').classList.remove('hidden');
-                    document.getElementById('btn-add-store').classList.remove('hidden');
-                } else {
-                    document.getElementById('admin-tabs-container').classList.add('hidden');
-                    document.getElementById('btn-add-store').classList.add('hidden');
-                }
                 switchAdminTab('stores');
             } else if (tab === 'ruta') document.getElementById('driver-panel').classList.remove('hidden');
             if (map) setTimeout(() => { map.invalidateSize(); }, 200);
